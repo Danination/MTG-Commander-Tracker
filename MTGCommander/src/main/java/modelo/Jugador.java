@@ -14,6 +14,8 @@ public class Jugador {
 	private String fotoVictoria;
 	private List<Comandante> comandantes;
 	private List<Partida> partidasJugadas;
+	private String comandanteNombre;
+	private String comandanteImagenUrl;
 	
 	public Jugador(int id, String nombre, String colorFavorito) {
 		this.id = id;
@@ -93,6 +95,22 @@ public class Jugador {
 
 	public void setPartidasJugadas(List<Partida> partidasJugadas) {
 		this.partidasJugadas = partidasJugadas;
+	}
+
+	public String getComandanteNombre() {
+		return comandanteNombre;
+	}
+
+	public void setComandanteNombre(String comandanteNombre) {
+		this.comandanteNombre = comandanteNombre;
+	}
+
+	public String getComandanteImagenUrl() {
+		return comandanteImagenUrl;
+	}
+
+	public void setComandanteImagenUrl(String comandanteImagenUrl) {
+		this.comandanteImagenUrl = comandanteImagenUrl;
 	}
 
 	@Override

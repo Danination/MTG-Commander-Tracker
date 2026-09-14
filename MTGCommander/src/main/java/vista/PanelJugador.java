@@ -2,242 +2,291 @@ package vista;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.FlowLayout;
+import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.Image;
+import java.awt.RenderingHints;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.net.URL;
 
+import javax.imageio.ImageIO;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.border.LineBorder;
+import javax.swing.SwingConstants;
 
 import modelo.Jugador;
 
 public class PanelJugador extends JPanel {
 
-	private static final long serialVersionUID = 1L;
-	
-	// Datos del jugador
-	private Jugador jugador;
-	private int vidas;
-	private int dañoComandante;
-	private int veneno;
-	private boolean eliminado = false; // <--- NUEVO: Estado del jugador
+    private static final long serialVersionUID = 1L;
+    
+    // Datos
+    private Jugador jugador;
+    private int vidas;
+    private int dañoComandante;
+    private int veneno;
+    private boolean eliminado = false;
+    private Image imagenFondo;
 
-	// Componentes visuales (Ahora son atributos para poder desactivarlos luego)
-	private JLabel lblNombre;
-	private JLabel lblVidas;
-	private JLabel lblDañoCmdte;
-	private JLabel lblVeneno;
-	
-	private JButton btnMasVida;
-	private JButton btnMenosVida;
-	private JButton btnMasCmdte;
-	private JButton btnMenosCmdte;
-	private JButton btnMasVeneno;
-	private JButton btnMenosVeneno;
-	private JButton btnConceder;
+    // Componentes Visuales
+    private JLabel lblVidas;
+    private JLabel lblNombre;
+    private JLabel lblCmdte;
+    private JLabel lblVeneno;
+    
+    private JButton btnMasVida;
+    private JButton btnMenosVida;
+    private JButton btnConceder;
+    private int energia;
+    
 
-	public PanelJugador(Jugador jugador, int vidasIniciales) {
-		this.jugador = jugador;
-		this.vidas = vidasIniciales;
-		this.dañoComandante = 0;
-		this.veneno = 0;
+    public PanelJugador(Jugador jugador, int vidasIniciales) {
+        this.jugador = jugador;
+        this.vidas = vidasIniciales;
+        this.dañoComandante = 0;
+        this.veneno = 0;
 
-		setBorder(new LineBorder(Color.GRAY, 2, true));
-		setLayout(new BorderLayout(5, 5));
+        // Configuración base
+        setLayout(new BorderLayout());
+        setPreferredSize(new Dimension(300, 400));
+        
+        // 1. Cargar imagen de fondo (ilustración limpia)
+        cargarImagenFondo(jugador.getComandanteImagenUrl());
 
-		// ==========================================
-		// 1. ZONA NORTE: Nombre
-		// ==========================================
-		lblNombre = new JLabel(jugador.getNombre() + " (" + jugador.getColorFavorito() + ")", JLabel.CENTER);
-		lblNombre.setFont(new Font("Tahoma", Font.BOLD, 16));
-		add(lblNombre, BorderLayout.NORTH);
+        // 2. ZONA NORTE: Botón Gigante MENOS
+        btnMenosVida = new JButton("−");
+        btnMenosVida.setFont(new Font("Tahoma", Font.BOLD, 60));
+        btnMenosVida.setFocusPainted(false);
+        btnMenosVida.setOpaque(false);
+        btnMenosVida.setContentAreaFilled(false);
+        btnMenosVida.setBorderPainted(false);
+        btnMenosVida.setForeground(new Color(255, 255, 255, 220));
+        btnMenosVida.setPreferredSize(new Dimension(300, 80));
+        btnMenosVida.addActionListener(e -> cambiarVidas(-1));
+        add(btnMenosVida, BorderLayout.NORTH);
 
-		// ==========================================
-		// 2. ZONA CENTRO: Vidas
-		// ==========================================
-		JPanel panelCentro = new JPanel(new BorderLayout());
-		
-		lblVidas = new JLabel(String.valueOf(vidas), JLabel.CENTER);
-		lblVidas.setFont(new Font("Tahoma", Font.BOLD, 48));
-		panelCentro.add(lblVidas, BorderLayout.CENTER);
+        // 3. ZONA CENTRO: Nombre + Vida gigante
+        JPanel panelCentro = new JPanel(new BorderLayout());
+        panelCentro.setOpaque(false);
+        
+        lblNombre = new JLabel(jugador.getNombre(), SwingConstants.CENTER);
+        lblNombre.setFont(new Font("Tahoma", Font.BOLD, 18));
+        lblNombre.setForeground(Color.WHITE);
+        lblNombre.setOpaque(true);
+        lblNombre.setBackground(new Color(0, 0, 0, 180));
+        panelCentro.add(lblNombre, BorderLayout.NORTH);
 
-		JPanel panelBotonesVida = new JPanel(new GridLayout(1, 2, 5, 5));
-		btnMasVida = new JButton("+1");
-		btnMenosVida = new JButton("-1");
-		
-		btnMasVida.setFont(new Font("Tahoma", Font.BOLD, 14));
-		btnMenosVida.setFont(new Font("Tahoma", Font.BOLD, 14));
-		
-		panelBotonesVida.add(btnMasVida);
-		panelBotonesVida.add(btnMenosVida);
-		panelCentro.add(panelBotonesVida, BorderLayout.SOUTH);
-		
-		add(panelCentro, BorderLayout.CENTER);
+        lblVidas = new JLabel(String.valueOf(vidas), SwingConstants.CENTER);
+        lblVidas.setFont(new Font("Tahoma", Font.BOLD, 100));
+        lblVidas.setForeground(Color.WHITE);
+        panelCentro.add(lblVidas, BorderLayout.CENTER);
 
-		// ==========================================
-		// 3. ZONA SUR: Comandante, Veneno y Conceder
-		// ==========================================
-		JPanel panelSur = new JPanel();
-		panelSur.setLayout(new GridLayout(3, 1, 5, 5)); // 3 filas: Cmdte, Veneno, Conceder
+        add(panelCentro, BorderLayout.CENTER);
 
-		// Fila 1: Daño de Comandante
-		JPanel filaCmdte = new JPanel(new FlowLayout(FlowLayout.CENTER));
-		lblDañoCmdte = new JLabel("Daño Cmdte: 0");
-		lblDañoCmdte.setFont(new Font("Tahoma", Font.PLAIN, 12));
-		btnMasCmdte = new JButton("+1");
-		btnMenosCmdte = new JButton("-1");
-		filaCmdte.add(lblDañoCmdte);
-		filaCmdte.add(btnMasCmdte);
-		filaCmdte.add(btnMenosCmdte);
-		panelSur.add(filaCmdte);
+        // 4. ZONA SUR: Botón Gigante MÁS
+        btnMasVida = new JButton("+");
+        btnMasVida.setFont(new Font("Tahoma", Font.BOLD, 60));
+        btnMasVida.setFocusPainted(false);
+        btnMasVida.setOpaque(false);
+        btnMasVida.setContentAreaFilled(false);
+        btnMasVida.setBorderPainted(false);
+        btnMasVida.setForeground(new Color(255, 255, 255, 220));
+        btnMasVida.setPreferredSize(new Dimension(300, 80));
+        btnMasVida.addActionListener(e -> cambiarVidas(1));
+        add(btnMasVida, BorderLayout.SOUTH);
 
-		// Fila 2: Veneno
-		JPanel filaVeneno = new JPanel(new FlowLayout(FlowLayout.CENTER));
-		lblVeneno = new JLabel("Veneno: 0");
-		lblVeneno.setFont(new Font("Tahoma", Font.PLAIN, 12));
-		btnMasVeneno = new JButton("+1");
-		btnMenosVeneno = new JButton("-1");
-		filaVeneno.add(lblVeneno);
-		filaVeneno.add(btnMasVeneno);
-		filaVeneno.add(btnMenosVeneno);
-		panelSur.add(filaVeneno);
+     // 5. PANEL FLOTANTE: Contadores en cuadrícula compacta (estilo app móvil)
+        JPanel panelFlotante = new JPanel();
+        panelFlotante.setLayout(new GridLayout(3, 2, 5, 5)); // 3 filas x 2 columnas
+        panelFlotante.setOpaque(false);
+        panelFlotante.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-		// Fila 3: Conceder
-		JPanel filaConceder = new JPanel(new FlowLayout(FlowLayout.CENTER));
-		btnConceder = new JButton("Conceder");
-		btnConceder.setFont(new Font("Tahoma", Font.BOLD, 12));
-		btnConceder.setForeground(Color.RED);
-		filaConceder.add(btnConceder);
-		panelSur.add(filaConceder);
+        Font fontContador = new Font("Tahoma", Font.BOLD, 11);
+        Color fondoContador = new Color(0, 0, 0, 200);
 
-		add(panelSur, BorderLayout.SOUTH);
+        // --- Fila 1: Daño de Comandante y Veneno ---
+        lblCmdte = new JLabel("⚔️ Cmdte: 0", SwingConstants.CENTER);
+        lblCmdte.setFont(fontContador);
+        lblCmdte.setForeground(Color.WHITE);
+        lblCmdte.setOpaque(true);
+        lblCmdte.setBackground(fondoContador);
+        lblCmdte.setBorder(javax.swing.BorderFactory.createLineBorder(Color.GRAY, 1));
+        lblCmdte.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 
-		// ==========================================
-		// 4. LÓGICA DE LOS BOTONES
-		// ==========================================
-		
-		// Botones de Vida
-		btnMasVida.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) { cambiarVidas(1); }
-		});
-		btnMenosVida.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) { cambiarVidas(-1); }
-		});
+        lblVeneno = new JLabel("️ Veneno: 0", SwingConstants.CENTER);
+        lblVeneno.setFont(fontContador);
+        lblVeneno.setForeground(Color.WHITE);
+        lblVeneno.setOpaque(true);
+        lblVeneno.setBackground(fondoContador);
+        lblVeneno.setBorder(javax.swing.BorderFactory.createLineBorder(Color.GRAY, 1));
+        lblVeneno.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 
-		// Botones de Daño de Comandante
-		btnMasCmdte.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				dañoComandante++;
-				lblDañoCmdte.setText("Daño Cmdte: " + dañoComandante);
-			}
-		});
-		btnMenosCmdte.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				if (dañoComandante > 0) {
-					dañoComandante--;
-					lblDañoCmdte.setText("Daño Cmdte: " + dañoComandante);
-				}
-			}
-		});
+        // --- Fila 2: Energía y Tesoro ---
+        JLabel lblEnergia = new JLabel("⚡ Energía: 0", SwingConstants.CENTER);
+        lblEnergia.setFont(fontContador);
+        lblEnergia.setForeground(new Color(0, 255, 255)); // Cian
+        lblEnergia.setOpaque(true);
+        lblEnergia.setBackground(fondoContador);
+        lblEnergia.setBorder(javax.swing.BorderFactory.createLineBorder(new Color(0, 255, 255), 1));
+        lblEnergia.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 
-		// Botones de Veneno
-		btnMasVeneno.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				veneno++;
-				lblVeneno.setText("Veneno: " + veneno);
-			}
-		});
-		btnMenosVeneno.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				if (veneno > 0) {
-					veneno--;
-					lblVeneno.setText("Veneno: " + veneno);
-				}
-			}
-		});
+        JLabel lblTesoro = new JLabel("💰 Tesoro: 0", SwingConstants.CENTER);
+        lblTesoro.setFont(fontContador);
+        lblTesoro.setForeground(new Color(255, 215, 0)); // Dorado
+        lblTesoro.setOpaque(true);
+        lblTesoro.setBackground(fondoContador);
+        lblTesoro.setBorder(javax.swing.BorderFactory.createLineBorder(new Color(255, 215, 0), 1));
+        lblTesoro.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 
-		// Botón CONCEDER (La lógica estrella)
-		btnConceder.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				if (eliminado) return; // Si ya está eliminado, no hacemos nada
+        // --- Fila 3: Monarca y Conceder ---
+        JLabel lblMonarca = new JLabel("👑 Monarca", SwingConstants.CENTER);
+        lblMonarca.setFont(fontContador);
+        lblMonarca.setForeground(Color.GRAY);
+        lblMonarca.setOpaque(true);
+        lblMonarca.setBackground(fondoContador);
+        lblMonarca.setBorder(javax.swing.BorderFactory.createLineBorder(Color.GRAY, 1));
+        lblMonarca.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 
-				int opcion = JOptionPane.showConfirmDialog(PanelJugador.this,
-						"¿Seguro que " + jugador.getNombre() + " concede la partida?",
-						"Confirmar Concesión", JOptionPane.YES_NO_OPTION);
+        btnConceder = new JButton("Conceder");
+        btnConceder.setFont(new Font("Tahoma", Font.BOLD, 11));
+        btnConceder.setBackground(new Color(200, 0, 0));
+        btnConceder.setForeground(Color.WHITE);
+        btnConceder.setFocusPainted(false);
 
-				if (opcion == JOptionPane.YES_OPTION) {
-					eliminarJugador();
-				}
-			}
-		});
-	}
+        // Añadir todo al panel en orden (izquierda a derecha, arriba a abajo)
+        panelFlotante.add(lblCmdte);
+        panelFlotante.add(lblVeneno);
+        panelFlotante.add(lblEnergia);
+        panelFlotante.add(lblTesoro);
+        panelFlotante.add(lblMonarca);
+        panelFlotante.add(btnConceder);
 
-	// ==========================================
-	// MÉTODOS AUXILIARES
-	// ==========================================
-	
-	private void cambiarVidas(int cantidad) {
-		if (eliminado) return; // <--- BLOQUEO: Si está eliminado, no puede cambiar vidas
+        add(panelFlotante, BorderLayout.EAST);
 
-		this.vidas += cantidad;
-		lblVidas.setText(String.valueOf(this.vidas));
-		
-		if (this.vidas < 20) {
-			lblVidas.setForeground(Color.RED);
-		} else {
-			lblVidas.setForeground(Color.BLACK);
-		}
-	}
+        // 6. LISTENERS para los contadores (clic izq = sumar, clic der = restar)
+        lblCmdte.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                if (eliminado) return;
+                if (e.getButton() == MouseEvent.BUTTON1) {
+                    dañoComandante++;
+                } else if (e.getButton() == MouseEvent.BUTTON3 && dañoComandante > 0) {
+                    dañoComandante--;
+                }
+                lblCmdte.setText("Cmdte: " + dañoComandante);
+            }
+        });
+        
+        lblVeneno.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                if (eliminado) return;
+                if (e.getButton() == MouseEvent.BUTTON1) {
+                    veneno++;
+                } else if (e.getButton() == MouseEvent.BUTTON3 && veneno > 0) {
+                    veneno--;
+                }
+                lblVeneno.setText("Veneno: " + veneno);
+            }
+        });
 
-	// Método para eliminar al jugador visual y lógicamente
-	private void eliminarJugador() {
-		eliminado = true;
-		
-		// 1. Deshabilitar todos los botones
-		btnMasVida.setEnabled(false);
-		btnMenosVida.setEnabled(false);
-		btnMasCmdte.setEnabled(false);
-		btnMenosCmdte.setEnabled(false);
-		btnMasVeneno.setEnabled(false);
-		btnMenosVeneno.setEnabled(false);
-		btnConceder.setEnabled(false);
-		
-		// 2. Cambios visuales para indicar que está fuera
-		btnConceder.setText("ELIMINADO");
-		lblVidas.setForeground(Color.GRAY);
-		lblNombre.setForeground(Color.GRAY);
-		this.setBackground(Color.LIGHT_GRAY); // El fondo del panel se pone gris
-	}
-	
-	// Método público para reiniciar el panel a su estado original
-	public void reiniciarPanel(int vidasIniciales) {
-		this.vidas = vidasIniciales;
-		this.dañoComandante = 0;
-		this.veneno = 0;
-		this.eliminado = false;
+        btnConceder.addActionListener(e -> confirmarConcesion());
+    }
 
-		// Actualizar textos
-		lblVidas.setText(String.valueOf(vidas));
-		lblVidas.setForeground(Color.BLACK);
-		lblDañoCmdte.setText("Daño Cmdte: 0");
-		lblVeneno.setText("Veneno: 0");
+    // Cargar imagen desde URL
+    private void cargarImagenFondo(String urlImagen) {
+        if (urlImagen != null && !urlImagen.isEmpty()) {
+            try {
+                URL url = new URL(urlImagen);
+                imagenFondo = ImageIO.read(url);
+            } catch (Exception e) {
+                System.out.println("No se pudo cargar la imagen de fondo para " + jugador.getNombre());
+                imagenFondo = null;
+            }
+        }
+    }
 
-		// Reactivar todos los botones
-		btnMasVida.setEnabled(true); btnMenosVida.setEnabled(true);
-		btnMasCmdte.setEnabled(true); btnMenosCmdte.setEnabled(true);
-		btnMasVeneno.setEnabled(true); btnMenosVeneno.setEnabled(true);
-		btnConceder.setEnabled(true); btnConceder.setText("Conceder");
+    // Dibujar el fondo con filtro oscuro para mejorar legibilidad
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2d = (Graphics2D) g;
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        
+        if (imagenFondo != null) {
+            g2d.drawImage(imagenFondo, 0, 0, getWidth(), getHeight(), this);
+            // Filtro oscuro semitransparente para que el texto resalte
+            g2d.setColor(new Color(0, 0, 0, 90));
+            g2d.fillRect(0, 0, getWidth(), getHeight());
+        } else {
+            // Fondo por defecto elegante
+            g2d.setColor(new Color(50, 50, 60));
+            g2d.fillRect(0, 0, getWidth(), getHeight());
+        }
+        
+        // Si está eliminado, capa negra más opaca
+        if (eliminado) {
+            g2d.setColor(new Color(0, 0, 0, 200));
+            g2d.fillRect(0, 0, getWidth(), getHeight());
+        }
+    }
 
-		// Restaurar colores y fondo
-		this.setBackground(null); 
-		lblNombre.setForeground(Color.BLACK);
-	}
+    private void cambiarVidas(int cantidad) {
+        if (eliminado) return;
+        this.vidas += cantidad;
+        lblVidas.setText(String.valueOf(this.vidas));
+        
+        // Efecto visual: rojo si baja de 20, verde si sube de 40
+        if (this.vidas < 20) lblVidas.setForeground(new Color(255, 80, 80));
+        else if (this.vidas > 40) lblVidas.setForeground(new Color(100, 255, 100));
+        else lblVidas.setForeground(Color.WHITE);
+    }
 
-	public Jugador getJugador() { return jugador; }
-	public int getVidas() { return vidas; }
+    private void confirmarConcesion() {
+        if (eliminado) return;
+        int opcion = JOptionPane.showConfirmDialog(this,
+                "¿Seguro que " + jugador.getNombre() + " concede?", 
+                "Confirmar Concesión", JOptionPane.YES_NO_OPTION);
+        if (opcion == JOptionPane.YES_OPTION) eliminarJugador();
+    }
+
+    private void eliminarJugador() {
+        eliminado = true;
+        btnMasVida.setEnabled(false);
+        btnMenosVida.setEnabled(false);
+        btnConceder.setText("ELIMINADO");
+        btnConceder.setBackground(Color.DARK_GRAY);
+        lblCmdte.setEnabled(false);
+        lblVeneno.setEnabled(false);
+        repaint();
+    }
+
+    public void reiniciarPanel(int vidasIniciales) {
+        this.vidas = vidasIniciales;
+        this.dañoComandante = 0;
+        this.veneno = 0;
+        this.eliminado = false;
+        
+        lblVidas.setText(String.valueOf(vidas));
+        lblVidas.setForeground(Color.WHITE);
+        lblCmdte.setText("Cmdte: 0");
+        lblCmdte.setEnabled(true);
+        lblVeneno.setText("Veneno: 0");
+        lblVeneno.setEnabled(true);
+        
+        btnMasVida.setEnabled(true);
+        btnMenosVida.setEnabled(true);
+        btnConceder.setEnabled(true);
+        btnConceder.setText("Conceder");
+        btnConceder.setBackground(new Color(200, 0, 0));
+        
+        repaint();
+    }
+
+    public Jugador getJugador() { return jugador; }
+    public int getVidas() { return vidas; }
 }

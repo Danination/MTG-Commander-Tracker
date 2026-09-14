@@ -39,6 +39,8 @@ public class NuevaPartida extends JFrame {
 	private JLabel lblCronometro;
 	private Timer timer;
 	private int segundosTranscurridos = 0;
+	private JLabel lblTurno;
+	private int turnoActual = 1;
 	
 	private List<Jugador> jugadoresEnPartida;
 
@@ -105,25 +107,51 @@ public class NuevaPartida extends JFrame {
 		dialogMensaje.setVisible(true); // Muestra el mensaje (bloquea hasta que se cierre)
 
 		// ==========================================
-		// 1. ZONA NORTE: Cronómetro Global y Controles
+		// 1. ZONA NORTE: Cronómetro, Turnos y Dados
 		// ==========================================
 		JPanel panelSuperior = new JPanel();
-		panelSuperior.setLayout(new FlowLayout(FlowLayout.CENTER, 15, 5));
-		
+		panelSuperior.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10)); // Más espacio entre elementos
+
+		// --- Cronómetro ---
 		JLabel lblTextoCrono = new JLabel("Tiempo:");
 		lblTextoCrono.setFont(new Font("Tahoma", Font.BOLD, 16));
 		panelSuperior.add(lblTextoCrono);
-		
+
 		lblCronometro = new JLabel("00:00");
-		lblCronometro.setFont(new Font("Tahoma", Font.BOLD, 28));
-		lblCronometro.setForeground(new Color(0, 100, 0)); // Verde oscuro
+		lblCronometro.setFont(new Font("Tahoma", Font.BOLD, 24));
+		lblCronometro.setForeground(new Color(0, 100, 0));
 		panelSuperior.add(lblCronometro);
-		
-		// Botón para Pausar / Reanudar
+
 		JButton btnPausarReanudar = new JButton("Pausar");
-		btnPausarReanudar.setFont(new Font("Tahoma", Font.BOLD, 14));
+		btnPausarReanudar.setFont(new Font("Tahoma", Font.BOLD, 12));
 		panelSuperior.add(btnPausarReanudar);
-		
+
+		// --- Separador visual ---
+		panelSuperior.add(new JLabel("|"));
+
+		// --- Contador de Turnos ---
+		JLabel lblTextoTurno = new JLabel("Turno:");
+		lblTextoTurno.setFont(new Font("Tahoma", Font.BOLD, 16));
+		panelSuperior.add(lblTextoTurno);
+
+		lblTurno = new JLabel("1");
+		lblTurno.setFont(new Font("Tahoma", Font.BOLD, 24));
+		lblTurno.setForeground(new Color(0, 0, 150)); // Azul para diferenciar
+		panelSuperior.add(lblTurno);
+
+		JButton btnSiguienteTurno = new JButton("Siguiente Turno >>");
+		btnSiguienteTurno.setFont(new Font("Tahoma", Font.BOLD, 12));
+		btnSiguienteTurno.setBackground(new Color(255, 200, 0)); // Amarillo para resaltar
+		panelSuperior.add(btnSiguienteTurno);
+
+		// --- Separador visual ---
+		panelSuperior.add(new JLabel("|"));
+
+		// --- Botón de Dados ---
+		JButton btnDados = new JButton(" Tirar Dados");
+		btnDados.setFont(new Font("Tahoma", Font.BOLD, 14));
+		panelSuperior.add(btnDados);
+
 		contentPane.add(panelSuperior, BorderLayout.NORTH);
 
 		// ==========================================
@@ -135,7 +163,7 @@ public class NuevaPartida extends JFrame {
 
 		   for (Jugador j : jugadoresSeleccionados) {
 		       PanelJugador panel = new PanelJugador(j, vidasIniciales);
-		       panelesDeJuego.add(panel); 
+		       panelesDeJuego.add(panel);
 		       panelMesa.add(panel);
 		   }
 
@@ -223,6 +251,54 @@ public class NuevaPartida extends JFrame {
 		           }
 		           
 		           JOptionPane.showMessageDialog(null, "Partida y cronómetro reiniciados a 0.");
+		       }
+		   });
+		   
+		// Lógica del botón "Siguiente Turno"
+		   btnSiguienteTurno.addActionListener(new ActionListener() {
+		       public void actionPerformed(ActionEvent e) {
+		           turnoActual++;
+		           lblTurno.setText(String.valueOf(turnoActual));
+		           
+		           // Efecto visual: parpadeo rápido para indicar cambio
+		           lblTurno.setForeground(Color.RED);
+		           Timer flashTimer = new Timer(300, new ActionListener() {
+		               public void actionPerformed(ActionEvent e) {
+		                   lblTurno.setForeground(new Color(0, 0, 150)); // Vuelve a azul
+		               }
+		           });
+		           flashTimer.setRepeats(false);
+		           flashTimer.start();
+		       }
+		   });
+
+		   // Lógica del botón "Tirar Dados"
+		   btnDados.addActionListener(new ActionListener() {
+		       public void actionPerformed(ActionEvent e) {
+		           // Opciones de dados comunes en Magic
+		           String[] opciones = {"d6 (6 caras)", "d20 (20 caras)", "d100 (100 caras)"};
+		           
+		           String seleccion = (String) JOptionPane.showInputDialog(
+		               NuevaPartida.this,
+		               "¿Qué dado quieres tirar?",
+		               "Lanzador de Dados",
+		               JOptionPane.QUESTION_MESSAGE,
+		               null,
+		               opciones,
+		               opciones[0]
+		           );
+		           
+		           if (seleccion != null) {
+		               int resultado = 0;
+		               if (seleccion.contains("d6")) resultado = (int)(Math.random() * 6) + 1;
+		               else if (seleccion.contains("d20")) resultado = (int)(Math.random() * 20) + 1;
+		               else if (seleccion.contains("d100")) resultado = (int)(Math.random() * 100) + 1;
+		               
+		               JOptionPane.showMessageDialog(NuevaPartida.this, 
+		                   "¡Has tirado un " + seleccion + "!\n\nResultado: " + resultado, 
+		                   "Resultado del Dado", 
+		                   JOptionPane.INFORMATION_MESSAGE);
+		           }
 		       }
 		   });
 		
