@@ -277,36 +277,58 @@ public class PanelJugador extends JPanel {
         
         if (imagenFondo != null) {
             g2d.drawImage(imagenFondo, 0, 0, getWidth(), getHeight(), this);
-            g2d.setColor(new Color(0, 0, 0, 100));
+            // Filtro normal para que el texto resalte
+            g2d.setColor(new Color(0, 0, 0, 100)); 
             g2d.fillRect(0, 0, getWidth(), getHeight());
         } else {
             g2d.setColor(new Color(60, 60, 70));
             g2d.fillRect(0, 0, getWidth(), getHeight());
         }
         
+        // 🟢 EFECTO "APAGADO": Si está eliminado, añadimos una capa negra semitransparente
         if (eliminado) {
-            g2d.setColor(new Color(0, 0, 0, 200));
+            // El valor 140 (de 255) hace que se vea oscuro pero aún se distingue la imagen de fondo
+            g2d.setColor(new Color(0, 0, 0, 140)); 
             g2d.fillRect(0, 0, getWidth(), getHeight());
         }
     }
 
     private void cambiarVidas(int cantidad) {
-        if (eliminado) return;
+        // Ya no bloqueamos si está eliminado, para permitir subir vidas y "revivir"
         this.vidas += cantidad;
         lblVidas.setText(String.valueOf(this.vidas));
         
+        // Colores según la vida
         if (this.vidas < 20) lblVidas.setForeground(new Color(255, 80, 80));
         else if (this.vidas > 40) lblVidas.setForeground(new Color(100, 255, 100));
         else lblVidas.setForeground(Color.WHITE);
-        
-        // Comprobar derrota por vidas
-        if (this.vidas <= 0) {
-            JOptionPane.showMessageDialog(this, 
-                "¡" + jugador.getNombre() + " ha llegado a 0 vidas!\n\n¡HA PERDIDO LA PARTIDA!", 
-                "¡DERROTA!", 
-                JOptionPane.WARNING_MESSAGE);
-            eliminarJugador();
+
+        // 🟢 LÓGICA DE REVIVIR: Si estaba eliminado y ahora tiene más de 0 vidas, vuelve a la partida
+        if (this.eliminado && this.vidas > 0) {
+            this.eliminado = false;
+            
+            // Restaurar botones y colores
+            btnConceder.setText("Conceder");
+            btnConceder.setBackground(new Color(200, 0, 0));
+            btnConceder.setEnabled(true);
+            btnMasVida.setEnabled(true);
+            btnMenosVida.setEnabled(true);
+            
+            System.out.println(jugador.getNombre() + " ha sido revivido!");
         }
+
+        // LÓGICA DE ELIMINACIÓN: Si llega a 0 o menos
+        if (this.vidas <= 0) {
+            if (!this.eliminado) { // Solo mostramos el mensaje y eliminamos una vez
+                JOptionPane.showMessageDialog(this, 
+                    "¡" + jugador.getNombre() + " ha llegado a 0 vidas!\n\n¡HA PERDIDO LA PARTIDA!", 
+                    "¡DERROTA!", 
+                    JOptionPane.WARNING_MESSAGE);
+                eliminarJugador();
+            }
+        }
+        
+        repaint(); // Importante para actualizar el efecto visual de "apagado"
     }
 
     private void confirmarConcesion() {
@@ -319,10 +341,16 @@ public class PanelJugador extends JPanel {
 
     private void eliminarJugador() {
         eliminado = true;
-        btnMasVida.setEnabled(false);
-        btnMenosVida.setEnabled(false);
-        btnConceder.setText("ELIMINADO");
+        
+        // NO deshabilitamos los botones de vida para permitir subir vidas y revivir
+        // btnMasVida.setEnabled(false);  <-- Comentado/Eliminado
+        // btnMenosVida.setEnabled(false); <-- Comentado/Eliminado
+        
+        // Deshabilitamos el botón de conceder, ya que el jugador está fuera
+        btnConceder.setEnabled(false);
+        btnConceder.setText("Fuera");
         btnConceder.setBackground(Color.DARK_GRAY);
+        
         repaint();
     }
 

@@ -150,4 +150,42 @@ public class GestorBD {
             System.err.println("❌ Error al guardar resultado: " + e.getMessage());
         }
     }
+    
+    /**
+     * Obtiene las estadísticas de todos los jugadores para el Ranking.
+     * Devuelve una lista de arrays de Object: [Nombre, Partidas, Victorias, %Victoria]
+     */
+    public static List<Object[]> obtenerRanking() {
+        List<Object[]> ranking = new ArrayList<>();
+        
+        // Consulta SQL avanzada: Cuenta partidas, suma victorias y calcula el porcentaje
+        String sql = """
+            SELECT 
+                j.nombre, 
+                COUNT(r.id) as partidas,
+                SUM(CASE WHEN r.posicion = 1 THEN 1 ELSE 0 END) as victorias,
+                ROUND(100.0 * SUM(CASE WHEN r.posicion = 1 THEN 1 ELSE 0 END) / COUNT(r.id), 1) as porcentaje
+            FROM jugadores j
+            JOIN resultados r ON j.id = r.jugador_id
+            GROUP BY j.id, j.nombre
+            ORDER BY victorias DESC, porcentaje DESC
+        """;
+
+        try (Connection conn = ConexionBD.getConexion();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                Object[] fila = new Object[4];
+                fila[0] = rs.getString("nombre");
+                fila[1] = rs.getInt("partidas");
+                fila[2] = rs.getInt("victorias");
+                fila[3] = rs.getDouble("porcentaje") + "%";
+                ranking.add(fila);
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error al obtener ranking: " + e.getMessage());
+        }
+        return ranking;
+    }
 }

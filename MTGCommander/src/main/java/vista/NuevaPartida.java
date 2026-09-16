@@ -8,8 +8,6 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -24,7 +22,6 @@ import javax.swing.SwingConstants;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 
-import dao.GestorBD;
 import modelo.Jugador;
 
 public class NuevaPartida extends JFrame {
@@ -308,58 +305,80 @@ public class NuevaPartida extends JFrame {
 			// Botón Finalizar
 			btnFinalizar.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
-					timer.stop();
+					timer.stop(); // Detenemos el cronómetro
 					
 					// 1. Preparar datos de la partida
-					String fechaActual = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+					String fechaActual = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
 					int duracion = segundosTranscurridos / 60; // Minutos
 					
-					// 2. Guardar la partida en la BD y obtener su ID
-					int idPartida = GestorBD.guardarPartida(fechaActual, duracion, "Partida normal");
+					// 2. Crear un panel personalizado para asignar posiciones
+					JPanel panelPosiciones = new JPanel(new java.awt.GridLayout(jugadoresEnPartida.size() + 1, 2, 10, 10));
+					panelPosiciones.setBorder(javax.swing.BorderFactory.createTitledBorder("Asigna la posición final a cada jugador"));
 					
-					if (idPartida != -1) {
-						// 3. Preguntar quién ganó (usando los nombres para la interfaz)
-						String[] nombresJugadores = new String[jugadoresEnPartida.size()];
-						for (int i = 0; i < jugadoresEnPartida.size(); i++) {
-							nombresJugadores[i] = jugadoresEnPartida.get(i).getNombre();
+					// Cabeceras de la tabla
+					panelPosiciones.add(new JLabel("Jugador", javax.swing.SwingConstants.CENTER));
+					panelPosiciones.add(new JLabel("Posición", javax.swing.SwingConstants.CENTER));
+					
+					// Mapa para guardar los combos y poder leer sus valores después
+					java.util.Map<modelo.Jugador, javax.swing.JComboBox<Integer>> combosPosicion = new java.util.HashMap<>();
+					
+					for (modelo.Jugador j : jugadoresEnPartida) {
+						panelPosiciones.add(new JLabel(j.getNombre(), javax.swing.SwingConstants.LEFT));
+						
+						javax.swing.JComboBox<Integer> combo = new javax.swing.JComboBox<>();
+						// Añadimos opciones del 1 al número total de jugadores
+						for (int i = 1; i <= jugadoresEnPartida.size(); i++) {
+							combo.addItem(i);
 						}
+						combosPosicion.put(j, combo);
+						panelPosiciones.add(combo);
+					}
+					
+					// 3. Mostrar el diálogo con el panel personalizado
+					int opcion = JOptionPane.showConfirmDialog(
+						NuevaPartida.this, 
+						panelPosiciones, 
+						"Finalizar Partida - Tiempo: " + lblCronometro.getText(), 
+						JOptionPane.OK_CANCEL_OPTION, 
+						JOptionPane.QUESTION_MESSAGE
+					);
+					
+					// 4. Si el usuario pulsa "Aceptar" (OK)
+					if (opcion == JOptionPane.OK_OPTION) {
 						
-						String ganadorNombre = (String) JOptionPane.showInputDialog(
-							NuevaPartida.this, 
-							"Selecciona el ganador de la partida:", 
-							"Fin de Partida - Tiempo: " + lblCronometro.getText(), 
-							JOptionPane.QUESTION_MESSAGE, 
-							null, 
-							nombresJugadores, 
-							nombresJugadores[0]
-						);
+						// Guardar la partida en la BD y obtener su ID
+						int idPartida = dao.GestorBD.guardarPartida(fechaActual, duracion, "Partida normal");
 						
-						if (ganadorNombre != null) {
-							// 4. Guardar los resultados en la BD
-							for (Jugador j : jugadoresEnPartida) {
-								int posicion = 0;
-								String tipo = "Derrota";
+						if (idPartida != -1) {
+							String ganador = "Desconocido";
+							
+							// 5. Guardar los resultados de CADA jugador
+							for (modelo.Jugador j : jugadoresEnPartida) {
+								int posicion = (int) combosPosicion.get(j).getSelectedItem();
+								String tipo = (posicion == 1) ? "Victoria" : "Derrota";
 								
-								if (j.getNombre().equals(ganadorNombre)) {
-									posicion = 1;
-									tipo = "Victoria";
-								} else {
-									// Para los demás, podríamos poner posición 2 por defecto o mejorar esto luego
-									posicion = 2; 
+								if (posicion == 1) {
+									ganador = j.getNombre();
 								}
 								
 								// Guardamos en la BD
-								GestorBD.guardarResultado(idPartida, j.getId(), posicion, tipo);
+								dao.GestorBD.guardarResultado(idPartida, j.getId(), posicion, tipo);
 							}
 							
 							JOptionPane.showMessageDialog(NuevaPartida.this, 
-								"¡Partida guardada en el Historial!\nGanador: " + ganadorNombre);
+								"¡Partida guardada en el Historial!\n\n🏆 Ganador: " + ganador,
+								"Partida Finalizada",
+								JOptionPane.INFORMATION_MESSAGE);
 						}
-					}
-					
-					dispose();
-					MenuPrincipal menu = new MenuPrincipal();
-					menu.setVisible(true);
+						
+						dispose();
+						MenuPrincipal menu = new MenuPrincipal();
+						menu.setVisible(true);
+						
+					} else {
+						// Si el usuario cancela, reanudamos el cronómetro por si acaso
+						timer.start();
+				 }
 				}
 			});
 	}
