@@ -69,8 +69,7 @@ public class GestionJugadores extends JFrame {
 		// ==========================================
 		// 3. INICIALIZACIÓN DEL MODELO DE DATOS
 		// ==========================================
-		// 3. CARGAMOS LOS DATOS DE PRUEBA EN LA PIZARRA GLOBAL (Solo la primera vez)
-		GestorDatos.cargarDatosIniciales();
+		
 		
 		// ==========================================
 		// 4. CREACIÓN DE COMPONENTES VISUALES

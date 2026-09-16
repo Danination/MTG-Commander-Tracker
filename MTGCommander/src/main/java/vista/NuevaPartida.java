@@ -49,8 +49,7 @@ public class NuevaPartida extends JFrame {
 			public void run() {
 				try {
 					List<Jugador> prueba = new ArrayList<>();
-					prueba.add(new Jugador(1, "Dani", "Rojo"));
-					prueba.add(new Jugador(2, "Mainez", "Verde"));
+					
 					NuevaPartida frame = new NuevaPartida(prueba, 40);
 					frame.setVisible(true);
 				} catch (Exception e) {
