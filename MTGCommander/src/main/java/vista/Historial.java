@@ -6,18 +6,19 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
-import modelo.GestorDatos;
-import modelo.Partida;
-import modelo.ResultadoJugador;
+import dao.ConexionBD;
 
 public class Historial extends JFrame {
 
@@ -82,31 +83,38 @@ public class Historial extends JFrame {
 		});
 	}
 
-	// Método auxiliar para leer las partidas y ponerlas en la lista
+	// Método para leer las partidas desde la Base de Datos
 	private void cargarHistorial() {
-		// Limpiamos la lista por si acaso
 		modeloHistorial.clear();
 		
-		// Comprobamos si hay partidas guardadas
-		if (GestorDatos.historialPartidas.isEmpty()) {
-			modeloHistorial.addElement("Aún no hay partidas jugadas. ¡A jugar!");
-			return;
-		}
-
-		// Recorremos la lista global de partidas
-		for (Partida p : GestorDatos.historialPartidas) {
-			// Buscamos quién fue el ganador (el que tiene posicionFinal == 1)
-			ResultadoJugador ganador = p.obtenerGanador();
-			String nombreGanador = (ganador != null) ? ganador.getJugador().getNombre() : "Desconocido";
-			
-			// Formateamos la fecha para que se vea bonita (dd/MM/yyyy HH:mm)
-			String fechaFormateada = p.getFecha().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
-			
-			// Creamos el texto que se verá en la lista
-			String textoLinea = "🏆 Ganador: " + nombreGanador + " | ⏱️ Tiempo: " + p.getDuracionMinutos() + " min | 📅 " + fechaFormateada;
-			
-			// Lo añadimos a nuestro modelo
-			modeloHistorial.addElement(textoLinea);
+		// Consulta SQL: Traemos la fecha, duración y el nombre del ganador (posición 1)
+		String sql = "SELECT p.fecha, p.duracion_minutos, j.nombre " +
+		             "FROM partidas p " +
+		             "JOIN resultados r ON p.id = r.partida_id " +
+		             "JOIN jugadores j ON r.jugador_id = j.id " +
+		             "WHERE r.posicion = 1 " +
+		             "ORDER BY p.id DESC"; // Las más recientes primero
+		             
+		try (Connection conn = ConexionBD.getConexion();
+		     Statement stmt = conn.createStatement();
+		     ResultSet rs = stmt.executeQuery(sql)) {
+		     
+		    while (rs.next()) {
+		        String fecha = rs.getString("fecha");
+		        int mins = rs.getInt("duracion_minutos");
+		        String ganador = rs.getString("nombre");
+		        
+		        String texto = "🏆 Ganador: " + ganador + " | ⏱️ " + mins + " min | 📅 " + fecha;
+		        modeloHistorial.addElement(texto);
+		    }
+		    
+		    if (modeloHistorial.isEmpty()) {
+		        modeloHistorial.addElement("Aún no hay partidas guardadas en la base de datos.");
+		    }
+		     
+		} catch (SQLException e) {
+		    System.err.println("Error al cargar historial: " + e.getMessage());
+		    modeloHistorial.addElement("Error al leer la base de datos.");
 		}
 	}
 }

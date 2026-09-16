@@ -14,6 +14,9 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 
+import dao.GestorBD;
+import modelo.Jugador;
+
 public class FormularioJugador extends JFrame {
 
 	private static final long serialVersionUID = 1L;
@@ -22,21 +25,14 @@ public class FormularioJugador extends JFrame {
 	private JTextField txtColor;
 	private JButton btnGuardar;
 	private JButton btnCancelar;
+	private Jugador jugadorAEditar;
 	
-	// 1. CORREGIDO: Nombre en minúscula (convención Java)
-	private modelo.Jugador jugadorAEditar;
-	
-	// Atributo para guardar la referencia al modelo de la lista
-	private DefaultListModel<modelo.Jugador> modeloRecibido;
+	private DefaultListModel<Jugador> modeloRecibido;
 
-	/**
-	 * Launch the application. (Solo para pruebas)
-	 */
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					// 2. CORREGIDO: Pasamos dos null porque el constructor ahora pide 2 parámetros
 					FormularioJugador frame = new FormularioJugador(null, null);
 					frame.setVisible(true);
 				} catch (Exception e) {
@@ -46,16 +42,10 @@ public class FormularioJugador extends JFrame {
 		});
 	}
 
-	/**
-	 * Create the frame.
-	 */
-	// 3. CORREGIDO: Añadido el segundo parámetro 'jugadorAEditar'
-	public FormularioJugador(DefaultListModel<modelo.Jugador> modelo, modelo.Jugador jugadorAEditar) {
-		// 1. Guardamos las referencias que nos envía la ventana anterior
+	public FormularioJugador(DefaultListModel<Jugador> modelo, Jugador jugadorAEditar) {
 		this.modeloRecibido = modelo;
 		this.jugadorAEditar = jugadorAEditar; 
 		
-		// Título dinámico
 		setTitle(jugadorAEditar == null ? "Nuevo Jugador" : "Editar Jugador");
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); 
 		setBounds(100, 100, 400, 200); 
@@ -78,7 +68,6 @@ public class FormularioJugador extends JFrame {
 		contentPane.add(txtColor);
 		txtColor.setColumns(10);
 		
-		// Texto del botón dinámico
 		btnGuardar = new JButton(jugadorAEditar == null ? "Guardar" : "Actualizar");
 		contentPane.add(btnGuardar);
 		
@@ -103,22 +92,30 @@ public class FormularioJugador extends JFrame {
 		// Botón Guardar / Actualizar
 		btnGuardar.addActionListener(new ActionListener() {
 		    public void actionPerformed(ActionEvent e) {
-		        String nombre = txtNombre.getText();
-		        String color = txtColor.getText();
+		        String nombre = txtNombre.getText().trim();
+		        String color = txtColor.getText().trim();
 		        
-		        if (!nombre.trim().isEmpty()) {
+		        if (!nombre.isEmpty()) {
 		            if (jugadorAEditar != null) {
-		                // MODO EDICIÓN: Actualizamos el objeto existente
+		                // MODO EDICIÓN: Actualizamos el objeto y guardamos en BD
 		                jugadorAEditar.setNombre(nombre);
 		                jugadorAEditar.setColorFavorito(color);
 		                
-		                // TRUCO DE SWING: Forzamos a la lista a repintarse con el objeto actualizado
+		                //  NUEVO: Guardar cambios en la Base de Datos (UPDATE)
+		                GestorBD.guardarJugador(jugadorAEditar);
+		                
+		                // Actualizar en la lista visual
 		                int indice = modeloRecibido.indexOf(jugadorAEditar);
 		                modeloRecibido.setElementAt(jugadorAEditar, indice);
 		            } else {
-		                // MODO CREACIÓN: Creamos uno nuevo
-		                int idAleatorio = (int) (Math.random() * 10000);
-		                modelo.Jugador nuevoJugador = new modelo.Jugador(idAleatorio, nombre, color);
+		                // MODO CREACIÓN: Creamos uno nuevo con ID 0
+		                Jugador nuevoJugador = new Jugador(0, nombre, color);
+		                
+		                // 🟢 NUEVO: Guardar en la Base de Datos (INSERT)
+		                // Esto asignará el ID real generado por la BD al objeto nuevoJugador
+		                GestorBD.guardarJugador(nuevoJugador);
+		                
+		                // Añadir a la lista visual
 		                modeloRecibido.addElement(nuevoJugador);
 		            }
 		            dispose(); // Cerramos el formulario en ambos casos

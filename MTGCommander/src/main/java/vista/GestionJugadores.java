@@ -6,6 +6,7 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.List;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -15,7 +16,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
-import modelo.GestorDatos; // <--- 1. IMPORTAMOS LA CLASE GLOBAL
+import dao.GestorBD;
+import modelo.Jugador;
 
 public class GestionJugadores extends JFrame {
 
@@ -25,11 +27,8 @@ public class GestionJugadores extends JFrame {
 	// 1. ATRIBUTOS DE LA CLASE
 	// ==========================================
 	private JPanel contentPane;
-	private JList<modelo.Jugador> listaJugadores;
-	
-	// 2. CONECTAMOS EL ATRIBUTO LOCAL A LA PIZARRA GLOBAL
-	// En lugar de "new DefaultListModel<>()", le decimos que use la global.
-	private DefaultListModel<modelo.Jugador> modeloJugadores = GestorDatos.modeloJugadoresGlobal;
+	private DefaultListModel<Jugador> modeloJugadores;
+	private JList<Jugador> listaJugadores;
 	
 	private JButton btnVolver;
 	private JButton btnAñadir;
@@ -52,6 +51,9 @@ public class GestionJugadores extends JFrame {
 		});
 	}
 
+	/**
+	 * Create the frame.
+	 */
 	public GestionJugadores() {
 		
 		// ==========================================
@@ -67,9 +69,16 @@ public class GestionJugadores extends JFrame {
 		contentPane.setLayout(new BorderLayout(10, 10)); 
 		
 		// ==========================================
-		// 3. INICIALIZACIÓN DEL MODELO DE DATOS
+		// 3. INICIALIZACIÓN DEL MODELO Y CARGA DESDE BD
 		// ==========================================
+		modeloJugadores = new DefaultListModel<>();
 		
+		// 🟢 NUEVO: Cargar jugadores desde la Base de Datos
+		List<Jugador> jugadoresBD = GestorBD.obtenerTodosLosJugadores();
+		for (Jugador j : jugadoresBD) {
+			modeloJugadores.addElement(j);
+		}
+		System.out.println("📂 Cargados " + jugadoresBD.size() + " jugadores desde la BD.");
 		
 		// ==========================================
 		// 4. CREACIÓN DE COMPONENTES VISUALES
@@ -126,7 +135,7 @@ public class GestionJugadores extends JFrame {
 		// Botón Editar
 		btnEditar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				modelo.Jugador seleccionado = listaJugadores.getSelectedValue();
+				Jugador seleccionado = listaJugadores.getSelectedValue();
 				
 				if (seleccionado == null) {
 					JOptionPane.showMessageDialog(null, 
@@ -143,7 +152,7 @@ public class GestionJugadores extends JFrame {
 		// Botón Eliminar
 		btnEliminar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				modelo.Jugador seleccionado = listaJugadores.getSelectedValue();
+				Jugador seleccionado = listaJugadores.getSelectedValue();
 				
 				if (seleccionado == null) {
 					JOptionPane.showMessageDialog(null, 
@@ -158,6 +167,10 @@ public class GestionJugadores extends JFrame {
 						JOptionPane.YES_NO_OPTION);
 				
 				if (opcion == JOptionPane.YES_OPTION) {
+					// 🟢 NUEVO: Eliminar de la Base de Datos
+					GestorBD.eliminarJugador(seleccionado.getId());
+					
+					// Eliminar de la lista visual
 					modeloJugadores.removeElement(seleccionado);
 				}
 			}

@@ -8,6 +8,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
 
+import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -20,7 +21,7 @@ import javax.swing.border.EmptyBorder;
 
 import com.google.gson.JsonObject;
 
-import modelo.GestorDatos;
+import dao.GestorBD;
 import modelo.Jugador;
 import servicios.ScryfallAPI;
 
@@ -64,11 +65,20 @@ public class ConfigurarPartida extends JFrame {
 		// ==========================================
 		// 2. ZONA CENTRO: Lista de jugadores (Selección Múltiple)
 		// ==========================================
-		// Usamos la lista GLOBAL que ya tiene a Dani, Mainez, Oscar, etc.
-		listaJugadoresDisponibles = new JList<>(GestorDatos.modeloJugadoresGlobal);
+		
+		// 🟢 NUEVO: Cargar jugadores directamente desde la Base de Datos
+		DefaultListModel<Jugador> modeloLista = new DefaultListModel<>();
+		List<Jugador> jugadoresBD = GestorBD.obtenerTodosLosJugadores();
+		
+		for (Jugador j : jugadoresBD) {
+			modeloLista.addElement(j);
+		}
+		
+		// Ahora sí, creamos la JList con los datos frescos de la BD
+		listaJugadoresDisponibles = new JList<>(modeloLista);
 		listaJugadoresDisponibles.setFont(new Font("Tahoma", Font.PLAIN, 16));
 		
-		// ¡TRUCO CLAVE! Permitir seleccionar más de un jugador a la vez
+		// Permitir seleccionar más de un jugador a la vez
 		listaJugadoresDisponibles.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		
 		contentPane.add(listaJugadoresDisponibles, BorderLayout.CENTER);

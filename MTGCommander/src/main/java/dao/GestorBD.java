@@ -103,4 +103,51 @@ public class GestorBD {
             System.err.println("❌ Error al eliminar jugador: " + e.getMessage());
         }
     }
+    
+    /**
+     * Guarda una nueva partida en la base de datos y devuelve su ID.
+     */
+    public static int guardarPartida(String fecha, int duracionMinutos, String notas) {
+        int idPartida = -1;
+        String sql = "INSERT INTO partidas (fecha, duracion_minutos, notas) VALUES (?, ?, ?)";
+        
+        try (Connection conn = ConexionBD.getConexion();
+             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            
+            pstmt.setString(1, fecha);
+            pstmt.setInt(2, duracionMinutos);
+            pstmt.setString(3, notas);
+            pstmt.executeUpdate();
+            
+            try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    idPartida = rs.getInt(1);
+                }
+            }
+            System.out.println("✅ Partida guardada en BD con ID: " + idPartida);
+        } catch (Exception e) {
+            System.err.println("❌ Error al guardar partida: " + e.getMessage());
+        }
+        return idPartida;
+    }
+
+    /**
+     * Guarda el resultado de un jugador en una partida específica.
+     */
+    public static void guardarResultado(int partidaId, int jugadorId, int posicion, String tipoResultado) {
+        String sql = "INSERT INTO resultados (partida_id, jugador_id, posicion, tipo_resultado) VALUES (?, ?, ?, ?)";
+        
+        try (Connection conn = ConexionBD.getConexion();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, partidaId);
+            pstmt.setInt(2, jugadorId);
+            pstmt.setInt(3, posicion);
+            pstmt.setString(4, tipoResultado);
+            pstmt.executeUpdate();
+            
+        } catch (Exception e) {
+            System.err.println("❌ Error al guardar resultado: " + e.getMessage());
+        }
+    }
 }

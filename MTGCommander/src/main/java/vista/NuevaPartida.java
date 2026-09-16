@@ -8,6 +8,8 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -22,10 +24,8 @@ import javax.swing.SwingConstants;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 
-import modelo.GestorDatos;
+import dao.GestorBD;
 import modelo.Jugador;
-import modelo.Partida;
-import modelo.ResultadoJugador;
 
 public class NuevaPartida extends JFrame {
 	
@@ -305,70 +305,62 @@ public class NuevaPartida extends JFrame {
 		       }
 		   });
 		
-		// Botón Finalizar
-		btnFinalizar.addActionListener(new ActionListener() {
-		    public void actionPerformed(ActionEvent e) {
-		        timer.stop(); // 1. Detenemos el cronómetro
-		        
-		        // 2. Creamos un array con los nombres de los jugadores para mostrarlos en el diálogo
-		        String[] nombresJugadores = new String[jugadoresEnPartida.size()];
-		        for (int i = 0; i < jugadoresEnPartida.size(); i++) {
-		            nombresJugadores[i] = jugadoresEnPartida.get(i).getNombre();
-		        }
-		        
-		        // 3. Mostramos un diálogo preguntando quién ha ganado
-		        String ganadorNombre = (String) JOptionPane.showInputDialog(
-		            NuevaPartida.this, 
-		            "Selecciona el ganador de la partida:", 
-		            "Fin de Partida - Tiempo: " + lblCronometro.getText(), 
-		            JOptionPane.QUESTION_MESSAGE, 
-		            null, 
-		            nombresJugadores, 
-		            nombresJugadores[0] // El primero de la lista aparece seleccionado por defecto
-		        );
-		        
-		        // 4. Si el usuario cancela o cierra la ventana, no hacemos nada
-		        if (ganadorNombre == null) {
-		            timer.start(); // Si cancela, reanudamos el cronómetro por si acaso
-		            return;
-		        }
-		        
-		        // 5. ¡Guardar la Partida en el Historial Global!
-		        // Buscamos el objeto Jugador completo basándonos en el nombre seleccionado
-		        Jugador jugadorGanador = null;
-		        for (Jugador j : jugadoresEnPartida) {
-		            if (j.getNombre().equals(ganadorNombre)) {
-		                jugadorGanador = j;
-		                break;
-		            }
-		        }
-		        
-		        // Creamos el Resultado del ganador (Posición 1)
-		        ResultadoJugador resultadoGanador = new ResultadoJugador(jugadorGanador, null, 1, "Victoria");
-		        // Nota: null en comandante porque aún no hemos implementado la selección de mazos.
-		        
-		        // Creamos la Partida
-		        Partida nuevaPartida = new Partida(
-		            GestorDatos.historialPartidas.size() + 1, // ID autoincremental simple
-		            java.time.LocalDateTime.now(),            // Fecha y hora actual
-		            segundosTranscurridos / 60,               // Duración en minutos (aprox)
-		            "Partida normal"                          // Notas por defecto
-		        );
-		        
-		        // Añadimos el resultado a la partida
-		        nuevaPartida.añadirResultado(resultadoGanador);
-		        
-		        // ¡La guardamos en la pizarra global!
-		        GestorDatos.historialPartidas.add(nuevaPartida);
-		        
-		        // 6. Avisamos al usuario y volvemos al menú
-		        JOptionPane.showMessageDialog(NuevaPartida.this, 
-		            "¡Partida guardada en el Historial!\nGanador: " + ganadorNombre + "\nTiempo: " + lblCronometro.getText());
-		            
-		        dispose();
-		        MenuPrincipal menu = new MenuPrincipal();
-		        menu.setVisible(true);
-		    }
-		});
+			// Botón Finalizar
+			btnFinalizar.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					timer.stop();
+					
+					// 1. Preparar datos de la partida
+					String fechaActual = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+					int duracion = segundosTranscurridos / 60; // Minutos
+					
+					// 2. Guardar la partida en la BD y obtener su ID
+					int idPartida = GestorBD.guardarPartida(fechaActual, duracion, "Partida normal");
+					
+					if (idPartida != -1) {
+						// 3. Preguntar quién ganó (usando los nombres para la interfaz)
+						String[] nombresJugadores = new String[jugadoresEnPartida.size()];
+						for (int i = 0; i < jugadoresEnPartida.size(); i++) {
+							nombresJugadores[i] = jugadoresEnPartida.get(i).getNombre();
+						}
+						
+						String ganadorNombre = (String) JOptionPane.showInputDialog(
+							NuevaPartida.this, 
+							"Selecciona el ganador de la partida:", 
+							"Fin de Partida - Tiempo: " + lblCronometro.getText(), 
+							JOptionPane.QUESTION_MESSAGE, 
+							null, 
+							nombresJugadores, 
+							nombresJugadores[0]
+						);
+						
+						if (ganadorNombre != null) {
+							// 4. Guardar los resultados en la BD
+							for (Jugador j : jugadoresEnPartida) {
+								int posicion = 0;
+								String tipo = "Derrota";
+								
+								if (j.getNombre().equals(ganadorNombre)) {
+									posicion = 1;
+									tipo = "Victoria";
+								} else {
+									// Para los demás, podríamos poner posición 2 por defecto o mejorar esto luego
+									posicion = 2; 
+								}
+								
+								// Guardamos en la BD
+								GestorBD.guardarResultado(idPartida, j.getId(), posicion, tipo);
+							}
+							
+							JOptionPane.showMessageDialog(NuevaPartida.this, 
+								"¡Partida guardada en el Historial!\nGanador: " + ganadorNombre);
+						}
+					}
+					
+					dispose();
+					MenuPrincipal menu = new MenuPrincipal();
+					menu.setVisible(true);
+				}
+			});
 	}
 }
