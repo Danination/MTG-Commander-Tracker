@@ -7,12 +7,12 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.net.URL;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
@@ -34,47 +34,44 @@ public class PanelJugador extends JPanel {
     private int dañoComandante;
     private int veneno;
     private int energia;
-    private int tesoro;
     private boolean esMonarca;
     private boolean eliminado = false;
     private Image imagenFondo;
+    private List<Jugador> todosLosJugadores; // Necesario para el popup
+    private List<PanelJugador> todosLosPaneles;
 
     // Componentes Visuales
     private JLabel lblVidas;
     private JLabel lblNombre;
-    private JLabel lblCmdte;
-    private JLabel lblVeneno;
-    private JLabel lblEnergia;
-    private JLabel lblTesoro;
-    private JLabel lblMonarca;
     private JLabel lblFotoComandante;
+    private JLabel lblIndicadorMonarca; // Corona pequeña si es monarca
     
     private JButton btnMasVida;
     private JButton btnMenosVida;
     private JButton btnConceder;
 
-    public PanelJugador(Jugador jugador, int vidasIniciales) {
+    public PanelJugador(Jugador jugador, int vidasIniciales, List<Jugador> todosLosJugadores, List<PanelJugador> todosLosPaneles) {
         this.jugador = jugador;
         this.vidas = vidasIniciales;
         this.dañoComandante = 0;
         this.veneno = 0;
         this.energia = 0;
-        this.tesoro = 0;
         this.esMonarca = false;
+        this.todosLosJugadores = todosLosJugadores;
+        this.todosLosPaneles = todosLosPaneles; // <-- NUEVO
+        // ... (el resto del constructor se queda igual) ...
 
-        // Configuración base
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(400, 500));
-        setOpaque(false); // Importante para que se vea el fondo pintado
+        setOpaque(false);
         
-        // 1. Cargar imagen de fondo
         cargarImagenFondo(jugador.getComandanteImagenUrl());
 
-        // 2. ZONA OESTE: Botón Gigante MENOS
+        // Botón MENOS (izquierda)
         btnMenosVida = new JButton("-");
         btnMenosVida.setFont(new Font("Arial", Font.BOLD, 80));
         btnMenosVida.setForeground(Color.WHITE);
-        btnMenosVida.setBackground(new Color(0, 0, 0, 100)); // Negro semitransparente
+        btnMenosVida.setBackground(new Color(0, 0, 0, 100));
         btnMenosVida.setOpaque(true);
         btnMenosVida.setFocusPainted(false);
         btnMenosVida.setBorderPainted(false);
@@ -82,7 +79,7 @@ public class PanelJugador extends JPanel {
         btnMenosVida.addActionListener(e -> cambiarVidas(-1));
         add(btnMenosVida, BorderLayout.WEST);
 
-        // 3. ZONA ESTE: Botón Gigante MÁS
+        // Botón MÁS (derecha)
         btnMasVida = new JButton("+");
         btnMasVida.setFont(new Font("Arial", Font.BOLD, 80));
         btnMasVida.setForeground(Color.WHITE);
@@ -94,14 +91,14 @@ public class PanelJugador extends JPanel {
         btnMasVida.addActionListener(e -> cambiarVidas(1));
         add(btnMasVida, BorderLayout.EAST);
 
-        // 4. ZONA CENTRO: Número de vida GIGANTE
+        // Vida gigante (centro)
         lblVidas = new JLabel(String.valueOf(vidas), SwingConstants.CENTER);
         lblVidas.setFont(new Font("Arial", Font.BOLD, 160));
         lblVidas.setForeground(Color.WHITE);
         lblVidas.setOpaque(false);
         add(lblVidas, BorderLayout.CENTER);
 
-        // 5. ZONA SUR: Foto del comandante + nombre
+        // Panel inferior: Foto + Nombre + Indicador Monarca
         JPanel panelInferior = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         panelInferior.setOpaque(false);
         
@@ -115,22 +112,17 @@ public class PanelJugador extends JPanel {
             ImageIcon icon = new ImageIcon(imagenFondo.getScaledInstance(80, 80, Image.SCALE_SMOOTH));
             lblFotoComandante.setIcon(icon);
         } else {
-            // Imagen por defecto si no hay comandante
             lblFotoComandante.setText("?");
             lblFotoComandante.setFont(new Font("Arial", Font.BOLD, 40));
             lblFotoComandante.setForeground(Color.WHITE);
             lblFotoComandante.setHorizontalAlignment(SwingConstants.CENTER);
         }
         
+        // Al hacer clic en la foto, abrir el popup de control
         lblFotoComandante.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         lblFotoComandante.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
-                JOptionPane.showMessageDialog(PanelJugador.this, 
-                    "Aqui se abrira el panel de control con todos los contadores.\n\n" +
-                    "Jugador: " + jugador.getNombre() + "\n" +
-                    "Comandante: " + (jugador.getComandanteNombre() != null ? jugador.getComandanteNombre() : "Sin asignar"),
-                    "Panel de Control", 
-                    JOptionPane.INFORMATION_MESSAGE);
+                abrirPanelControl();
             }
         });
         
@@ -144,141 +136,87 @@ public class PanelJugador extends JPanel {
         lblNombre.setPreferredSize(new Dimension(150, 40));
         panelInferior.add(lblNombre);
         
+        // Indicador de Monarca (corona pequeña)
+        lblIndicadorMonarca = new JLabel("");
+        lblIndicadorMonarca.setFont(new Font("Arial", Font.BOLD, 24));
+        lblIndicadorMonarca.setForeground(new Color(255, 215, 0));
+        panelInferior.add(lblIndicadorMonarca);
+        
         add(panelInferior, BorderLayout.SOUTH);
 
-        // 6. PANEL DE CONTADORES (arriba, en cuadrícula 3x2)
-        JPanel panelContadores = new JPanel();
-        panelContadores.setLayout(new GridLayout(3, 2, 5, 5));
-        panelContadores.setOpaque(false);
-        panelContadores.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        Font fontContador = new Font("Arial", Font.BOLD, 12);
-        Color fondoContador = new Color(0, 0, 0, 200);
-        
-        lblCmdte = new JLabel("Cmdte: 0", SwingConstants.CENTER);
-        lblCmdte.setFont(fontContador);
-        lblCmdte.setForeground(Color.WHITE);
-        lblCmdte.setOpaque(true);
-        lblCmdte.setBackground(fondoContador);
-        lblCmdte.setBorder(javax.swing.BorderFactory.createLineBorder(Color.GRAY, 1));
-        lblCmdte.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        
-        lblVeneno = new JLabel("Veneno: 0", SwingConstants.CENTER);
-        lblVeneno.setFont(fontContador);
-        lblVeneno.setForeground(Color.WHITE);
-        lblVeneno.setOpaque(true);
-        lblVeneno.setBackground(fondoContador);
-        lblVeneno.setBorder(javax.swing.BorderFactory.createLineBorder(Color.GRAY, 1));
-        lblVeneno.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        
-        lblEnergia = new JLabel("Energia: 0", SwingConstants.CENTER);
-        lblEnergia.setFont(fontContador);
-        lblEnergia.setForeground(new Color(0, 255, 255));
-        lblEnergia.setOpaque(true);
-        lblEnergia.setBackground(fondoContador);
-        lblEnergia.setBorder(javax.swing.BorderFactory.createLineBorder(new Color(0, 255, 255), 1));
-        lblEnergia.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        
-        lblTesoro = new JLabel("Tesoro: 0", SwingConstants.CENTER);
-        lblTesoro.setFont(fontContador);
-        lblTesoro.setForeground(new Color(255, 215, 0));
-        lblTesoro.setOpaque(true);
-        lblTesoro.setBackground(fondoContador);
-        lblTesoro.setBorder(javax.swing.BorderFactory.createLineBorder(new Color(255, 215, 0), 1));
-        lblTesoro.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        
-        lblMonarca = new JLabel("Monarca", SwingConstants.CENTER);
-        lblMonarca.setFont(fontContador);
-        lblMonarca.setForeground(Color.GRAY);
-        lblMonarca.setOpaque(true);
-        lblMonarca.setBackground(fondoContador);
-        lblMonarca.setBorder(javax.swing.BorderFactory.createLineBorder(Color.GRAY, 1));
-        lblMonarca.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        
+        // Botón Conceder (esquina superior derecha)
+        JPanel panelSuperior = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        panelSuperior.setOpaque(false);
         btnConceder = new JButton("Conceder");
         btnConceder.setFont(new Font("Arial", Font.BOLD, 12));
         btnConceder.setBackground(new Color(200, 0, 0));
         btnConceder.setForeground(Color.WHITE);
         btnConceder.setFocusPainted(false);
-        
-        panelContadores.add(lblCmdte);
-        panelContadores.add(lblVeneno);
-        panelContadores.add(lblEnergia);
-        panelContadores.add(lblTesoro);
-        panelContadores.add(lblMonarca);
-        panelContadores.add(btnConceder);
-        
-        add(panelContadores, BorderLayout.NORTH);
+        btnConceder.addActionListener(e -> confirmarConcesion());
+        panelSuperior.add(btnConceder);
+        add(panelSuperior, BorderLayout.NORTH);
+    }
 
-        // 7. LISTENERS para los contadores
-        lblCmdte.addMouseListener(new MouseAdapter() {
-            public void mouseClicked(MouseEvent e) {
-                if (eliminado) return;
-                if (e.getButton() == MouseEvent.BUTTON1) dañoComandante++;
-                else if (e.getButton() == MouseEvent.BUTTON3 && dañoComandante > 0) dañoComandante--;
-                lblCmdte.setText("Cmdte: " + dañoComandante);
-            }
-        });
+    private void abrirPanelControl() {
+        PanelControlJugador popup = new PanelControlJugador(this, jugador, todosLosJugadores);
+        popup.setVisible(true);
+    }
+
+    // Métodos públicos para que el popup pueda modificar los valores
+    public void sumarDanioComandante(int cantidad, Jugador quienHaceElDanio) {
+        if (eliminado) return;
+        this.dañoComandante += cantidad;
+        System.out.println(jugador.getNombre() + " recibió " + cantidad + " de daño de comandante de " + quienHaceElDanio.getNombre());
+    }
+    
+    public void sumarVeneno() { if (!eliminado) veneno++; }
+    public void restarVeneno() { if (!eliminado && veneno > 0) veneno--; }
+    public void sumarEnergia() { if (!eliminado) energia++; }
+    public void restarEnergia() { if (!eliminado && energia > 0) energia--; }
+    
+    public void toggleMonarca() {
+        if (eliminado) return;
         
-        lblVeneno.addMouseListener(new MouseAdapter() {
-            public void mouseClicked(MouseEvent e) {
-                if (eliminado) return;
-                if (e.getButton() == MouseEvent.BUTTON1) veneno++;
-                else if (e.getButton() == MouseEvent.BUTTON3 && veneno > 0) veneno--;
-                lblVeneno.setText("Veneno: " + veneno);
-            }
-        });
-        
-        lblEnergia.addMouseListener(new MouseAdapter() {
-            public void mouseClicked(MouseEvent e) {
-                if (eliminado) return;
-                if (e.getButton() == MouseEvent.BUTTON1) energia++;
-                else if (e.getButton() == MouseEvent.BUTTON3 && energia > 0) energia--;
-                lblEnergia.setText("Energia: " + energia);
-            }
-        });
-        
-        lblTesoro.addMouseListener(new MouseAdapter() {
-            public void mouseClicked(MouseEvent e) {
-                if (eliminado) return;
-                if (e.getButton() == MouseEvent.BUTTON1) tesoro++;
-                else if (e.getButton() == MouseEvent.BUTTON3 && tesoro > 0) tesoro--;
-                lblTesoro.setText("Tesoro: " + tesoro);
-            }
-        });
-        
-        lblMonarca.addMouseListener(new MouseAdapter() {
-            public void mouseClicked(MouseEvent e) {
-                if (eliminado) return;
-                esMonarca = !esMonarca;
-                if (esMonarca) {
-                    lblMonarca.setText("Monarca: SI");
-                    lblMonarca.setForeground(new Color(255, 215, 0));
-                    lblMonarca.setBorder(javax.swing.BorderFactory.createLineBorder(new Color(255, 215, 0), 2));
-                } else {
-                    lblMonarca.setText("Monarca");
-                    lblMonarca.setForeground(Color.GRAY);
-                    lblMonarca.setBorder(javax.swing.BorderFactory.createLineBorder(Color.GRAY, 1));
+        if (!this.esMonarca) {
+            // Si nos vamos a activar, primero desactivamos a TODOS los demás paneles
+            for (PanelJugador otroPanel : todosLosPaneles) {
+                if (otroPanel != this) {
+                    otroPanel.desactivarMonarca();
                 }
             }
-        });
-
-        btnConceder.addActionListener(e -> confirmarConcesion());
+            // Ahora nos activamos a nosotros mismos
+            this.esMonarca = true;
+            this.lblIndicadorMonarca.setText("👑");
+        } else {
+            // Si ya éramos monarca, simplemente nos desactivamos
+            this.esMonarca = false;
+            this.lblIndicadorMonarca.setText("");
+        }
+        repaint();
     }
+
+    // Nuevo método auxiliar para ser desactivado por otros
+    public void desactivarMonarca() {
+        this.esMonarca = false;
+        this.lblIndicadorMonarca.setText("");
+        repaint();
+    }
+    
+    // Getters para el popup
+    public int getVidas() { return vidas; }
+    public int getDanioComandante() { return dañoComandante; }
+    public int getVeneno() { return veneno; }
+    public int getEnergia() { return energia; }
+    public boolean esMonarca() { return esMonarca; }
 
     private void cargarImagenFondo(String urlImagen) {
         if (urlImagen != null && !urlImagen.isEmpty()) {
             try {
                 URL url = new URL(urlImagen);
                 imagenFondo = ImageIO.read(url);
-                System.out.println("Imagen cargada para " + jugador.getNombre() + ": " + urlImagen);
             } catch (Exception e) {
-                System.out.println("No se pudo cargar la imagen de fondo para " + jugador.getNombre() + ": " + e.getMessage());
                 imagenFondo = null;
             }
-        } else {
-            System.out.println("Sin imagen para " + jugador.getNombre());
-            imagenFondo = null;
         }
     }
 
@@ -290,11 +228,9 @@ public class PanelJugador extends JPanel {
         
         if (imagenFondo != null) {
             g2d.drawImage(imagenFondo, 0, 0, getWidth(), getHeight(), this);
-            // Filtro oscuro para que el texto resalte
             g2d.setColor(new Color(0, 0, 0, 100));
             g2d.fillRect(0, 0, getWidth(), getHeight());
         } else {
-            // Fondo por defecto
             g2d.setColor(new Color(60, 60, 70));
             g2d.fillRect(0, 0, getWidth(), getHeight());
         }
@@ -329,11 +265,6 @@ public class PanelJugador extends JPanel {
         btnMenosVida.setEnabled(false);
         btnConceder.setText("ELIMINADO");
         btnConceder.setBackground(Color.DARK_GRAY);
-        lblCmdte.setEnabled(false);
-        lblVeneno.setEnabled(false);
-        lblEnergia.setEnabled(false);
-        lblTesoro.setEnabled(false);
-        lblMonarca.setEnabled(false);
         repaint();
     }
 
@@ -342,24 +273,12 @@ public class PanelJugador extends JPanel {
         this.dañoComandante = 0;
         this.veneno = 0;
         this.energia = 0;
-        this.tesoro = 0;
         this.esMonarca = false;
         this.eliminado = false;
         
         lblVidas.setText(String.valueOf(vidas));
         lblVidas.setForeground(Color.WHITE);
-        lblCmdte.setText("Cmdte: 0");
-        lblCmdte.setEnabled(true);
-        lblVeneno.setText("Veneno: 0");
-        lblVeneno.setEnabled(true);
-        lblEnergia.setText("Energia: 0");
-        lblEnergia.setEnabled(true);
-        lblTesoro.setText("Tesoro: 0");
-        lblTesoro.setEnabled(true);
-        lblMonarca.setText("Monarca");
-        lblMonarca.setForeground(Color.GRAY);
-        lblMonarca.setBorder(javax.swing.BorderFactory.createLineBorder(Color.GRAY, 1));
-        lblMonarca.setEnabled(true);
+        lblIndicadorMonarca.setText("");
         
         btnMasVida.setEnabled(true);
         btnMenosVida.setEnabled(true);
@@ -371,5 +290,4 @@ public class PanelJugador extends JPanel {
     }
 
     public Jugador getJugador() { return jugador; }
-    public int getVidas() { return vidas; }
 }

@@ -161,11 +161,15 @@ public class NuevaPartida extends JFrame {
 		panelMesa.setLayout(new GridLayout(0, 2, 10, 10)); // 2 columnas, filas automáticas
 		contentPane.add(panelMesa, BorderLayout.CENTER);
 
-		   for (Jugador j : jugadoresSeleccionados) {
-		       PanelJugador panel = new PanelJugador(j, vidasIniciales);
-		       panelesDeJuego.add(panel);
-		       panelMesa.add(panel);
-		   }
+		List<PanelJugador> panelesDeJuego = new ArrayList<>(); // Lista que compartiremos
+
+		for (Jugador j : jugadoresSeleccionados) {
+		    // Le pasamos la lista (aunque esté vacía al principio, se llenará y todos la compartirán)
+		    PanelJugador panel = new PanelJugador(j, vidasIniciales, jugadoresSeleccionados, panelesDeJuego);
+		    
+		    panelesDeJuego.add(panel); // La añadimos a la lista
+		    panelMesa.add(panel);      // La añadimos a la mesa visual
+		}
 
 		// ==========================================
 		// 3. ZONA SUR: Botones de control global
