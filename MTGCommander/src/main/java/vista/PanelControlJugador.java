@@ -10,6 +10,7 @@ import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -28,7 +29,6 @@ public class PanelControlJugador extends JDialog {
     private Jugador jugador;
     private List<Jugador> todosLosJugadores;
     
-    // Labels para mostrar los valores actuales
     private JLabel lblVidas;
     private JLabel lblCmdte;
     private JLabel lblVeneno;
@@ -37,25 +37,19 @@ public class PanelControlJugador extends JDialog {
     private JLabel lblFotoGrande;
 
     public PanelControlJugador(PanelJugador panelJugador, Jugador jugador, List<Jugador> todosLosJugadores) {
-        // 1. Constructor vacío: CERO errores de compilación garantizados
-        super(); 
+        super(); // Constructor vacío para evitar errores
         
-        // 2. Configuramos las propiedades manualmente
-        setModal(true); // Esto hace que bloquee la ventana de atrás (como un popup debe ser)
+        setModal(true);
         setTitle("Control de " + jugador.getNombre());
         setSize(500, 600);
-        
-        // 3. Esto la centra perfectamente respecto al panel que la llamó
-        setLocationRelativeTo(panelJugador); 
+        setLocationRelativeTo(panelJugador);
         setLayout(new BorderLayout(10, 10));
         
         this.panelJugador = panelJugador;
         this.jugador = jugador;
         this.todosLosJugadores = todosLosJugadores;
         
-        // ==========================================
         // 1. ZONA NORTE: Foto grande del comandante
-        // ==========================================
         JPanel panelFoto = new JPanel(new FlowLayout(FlowLayout.CENTER));
         panelFoto.setOpaque(false);
         
@@ -88,9 +82,7 @@ public class PanelControlJugador extends JDialog {
         panelFoto.add(lblFotoGrande);
         add(panelFoto, BorderLayout.NORTH);
         
-        // ==========================================
         // 2. ZONA CENTRO: Contadores organizados
-        // ==========================================
         JPanel panelCentro = new JPanel();
         panelCentro.setLayout(new GridLayout(4, 1, 10, 10));
         panelCentro.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -102,11 +94,11 @@ public class PanelControlJugador extends JDialog {
         panelVidas.add(lblVidas);
         panelCentro.add(panelVidas);
         
-        // Fila 2: Daño de Comandante
+        // Fila 2: Daño de Comandante (con desglose por jugador)
         JPanel panelCmdte = new JPanel();
         panelCmdte.setLayout(new BorderLayout());
-        lblCmdte = new JLabel("Daño de Comandante: " + panelJugador.getDanioComandante(), SwingConstants.CENTER);
-        lblCmdte.setFont(new Font("Arial", Font.BOLD, 16));
+        lblCmdte = new JLabel("Daño de Comandante: 0", SwingConstants.CENTER);
+        lblCmdte.setFont(new Font("Arial", Font.BOLD, 14));
         panelCmdte.add(lblCmdte, BorderLayout.NORTH);
         
         JPanel panelBotonesCmdte = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
@@ -117,7 +109,7 @@ public class PanelControlJugador extends JDialog {
                 btn.addActionListener(new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
                         panelJugador.sumarDanioComandante(1, otroJugador);
-                        actualizarValores();
+                        actualizarDesgloseCmdte();
                     }
                 });
                 panelBotonesCmdte.add(btn);
@@ -154,9 +146,7 @@ public class PanelControlJugador extends JDialog {
         
         add(panelCentro, BorderLayout.CENTER);
         
-        // ==========================================
         // 3. ZONA SUR: Monarca y Cerrar
-        // ==========================================
         JPanel panelSur = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         
         lblMonarca = new JLabel("Monarca: NO");
@@ -177,21 +167,38 @@ public class PanelControlJugador extends JDialog {
         
         add(panelSur, BorderLayout.SOUTH);
         
-        // Inicializar valores
         actualizarValores();
     }
     
     private void actualizarValores() {
         lblVidas.setText("Vidas: " + panelJugador.getVidas());
-        lblCmdte.setText("Daño de Comandante: " + panelJugador.getDanioComandante());
         lblVeneno.setText("Veneno: " + panelJugador.getVeneno());
         lblEnergia.setText("Energía: " + panelJugador.getEnergia());
         lblMonarca.setText("Monarca: " + (panelJugador.esMonarca() ? "SÍ" : "NO"));
-        
         if (panelJugador.esMonarca()) {
-            lblMonarca.setForeground(new Color(255, 215, 0)); // Dorado
+            lblMonarca.setForeground(new Color(255, 215, 0));
         } else {
             lblMonarca.setForeground(Color.GRAY);
         }
+        actualizarDesgloseCmdte();
+    }
+    
+    private void actualizarDesgloseCmdte() {
+        Map<Jugador, Integer> desglose = panelJugador.getDesgloseDanioComandante();
+        if (desglose.isEmpty()) {
+            lblCmdte.setText("Daño de Comandante: 0");
+            return;
+        }
+        
+        StringBuilder texto = new StringBuilder("Daño Cmdte: ");
+        for (Map.Entry<Jugador, Integer> entry : desglose.entrySet()) {
+            texto.append(entry.getKey().getNombre()).append(": ")
+                 .append(entry.getValue()).append(" | ");
+        }
+        String textoFinal = texto.toString();
+        if (textoFinal.endsWith("| ")) {
+            textoFinal = textoFinal.substring(0, textoFinal.length() - 2);
+        }
+        lblCmdte.setText(textoFinal);
     }
 }

@@ -12,7 +12,9 @@ import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
@@ -31,35 +33,37 @@ public class PanelJugador extends JPanel {
     // Datos
     private Jugador jugador;
     private int vidas;
-    private int dañoComandante;
     private int veneno;
     private int energia;
     private boolean esMonarca;
     private boolean eliminado = false;
     private Image imagenFondo;
-    private List<Jugador> todosLosJugadores; // Necesario para el popup
+    private List<Jugador> todosLosJugadores;
     private List<PanelJugador> todosLosPaneles;
+    
+    // NUEVO: Mapa para rastrear el daño de comandante POR jugador enemigo
+    private Map<Jugador, Integer> dañoPorComandante = new HashMap<>();
 
     // Componentes Visuales
     private JLabel lblVidas;
     private JLabel lblNombre;
     private JLabel lblFotoComandante;
-    private JLabel lblIndicadorMonarca; // Corona pequeña si es monarca
+    private JLabel lblIndicadorMonarca;
     
     private JButton btnMasVida;
     private JButton btnMenosVida;
     private JButton btnConceder;
 
-    public PanelJugador(Jugador jugador, int vidasIniciales, List<Jugador> todosLosJugadores, List<PanelJugador> todosLosPaneles) {
+    public PanelJugador(Jugador jugador, int vidasIniciales, 
+                        List<Jugador> todosLosJugadores, 
+                        List<PanelJugador> todosLosPaneles) {
         this.jugador = jugador;
         this.vidas = vidasIniciales;
-        this.dañoComandante = 0;
         this.veneno = 0;
         this.energia = 0;
         this.esMonarca = false;
         this.todosLosJugadores = todosLosJugadores;
-        this.todosLosPaneles = todosLosPaneles; // <-- NUEVO
-        // ... (el resto del constructor se queda igual) ...
+        this.todosLosPaneles = todosLosPaneles;
 
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(400, 500));
@@ -118,7 +122,6 @@ public class PanelJugador extends JPanel {
             lblFotoComandante.setHorizontalAlignment(SwingConstants.CENTER);
         }
         
-        // Al hacer clic en la foto, abrir el popup de control
         lblFotoComandante.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         lblFotoComandante.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
@@ -136,7 +139,7 @@ public class PanelJugador extends JPanel {
         lblNombre.setPreferredSize(new Dimension(150, 40));
         panelInferior.add(lblNombre);
         
-        // Indicador de Monarca (corona pequeña)
+        // Indicador de Monarca (corona)
         lblIndicadorMonarca = new JLabel("");
         lblIndicadorMonarca.setFont(new Font("Arial", Font.BOLD, 24));
         lblIndicadorMonarca.setForeground(new Color(255, 215, 0));
@@ -162,14 +165,59 @@ public class PanelJugador extends JPanel {
         popup.setVisible(true);
     }
 
-    // Métodos públicos para que el popup pueda modificar los valores
+    // ==========================================
+    // MÉTODOS DE ESTADO (para el popup)
+    // ==========================================
+    
     public void sumarDanioComandante(int cantidad, Jugador quienHaceElDanio) {
         if (eliminado) return;
-        this.dañoComandante += cantidad;
-        System.out.println(jugador.getNombre() + " recibió " + cantidad + " de daño de comandante de " + quienHaceElDanio.getNombre());
+        
+        // 1. Rastrear el daño por comandante (para la regla de los 21)
+        int dañoActual = dañoPorComandante.getOrDefault(quienHaceElDanio, 0);
+        dañoPorComandante.put(quienHaceElDanio, dañoActual + cantidad);
+        
+        // 2. ¡NUEVO! También restar las vidas totales
+        cambiarVidas(-cantidad);
+        
+        System.out.println(jugador.getNombre() + " recibió " + cantidad + 
+                          " de daño de comandante de " + quienHaceElDanio.getNombre() + 
+                          ". Total de este comandante: " + (dañoActual + cantidad) +
+                          ". Vidas restantes: " + vidas);
+        
+        // 3. Comprobar derrota por 21 de daño de un mismo comandante
+        if ((dañoActual + cantidad) >= 21) {
+            JOptionPane.showMessageDialog(this, 
+                "¡" + jugador.getNombre() + " ha recibido 21 o más de daño de comandante de " + 
+                quienHaceElDanio.getNombre() + "!\n\n¡HA PERDIDO LA PARTIDA!", 
+                "¡DERROTA POR COMANDANTE!", 
+                JOptionPane.WARNING_MESSAGE);
+            eliminarJugador();
+        }
     }
     
-    public void sumarVeneno() { if (!eliminado) veneno++; }
+    public int getTotalDanioComandante() {
+        int total = 0;
+        for (int d : dañoPorComandante.values()) {
+            total += d;
+        }
+        return total;
+    }
+    
+    public Map<Jugador, Integer> getDesgloseDanioComandante() {
+        return dañoPorComandante;
+    }
+    
+    public void sumarVeneno() { 
+        if (eliminado) return;
+        veneno++; 
+        if (veneno >= 10) {
+            JOptionPane.showMessageDialog(this, 
+                "¡" + jugador.getNombre() + " ha acumulado 10 contadores de veneno!\n\n¡HA PERDIDO LA PARTIDA!", 
+                "¡DERROTA POR VENENO!", 
+                JOptionPane.WARNING_MESSAGE);
+            eliminarJugador();
+        }
+    }
     public void restarVeneno() { if (!eliminado && veneno > 0) veneno--; }
     public void sumarEnergia() { if (!eliminado) energia++; }
     public void restarEnergia() { if (!eliminado && energia > 0) energia--; }
@@ -178,37 +226,38 @@ public class PanelJugador extends JPanel {
         if (eliminado) return;
         
         if (!this.esMonarca) {
-            // Si nos vamos a activar, primero desactivamos a TODOS los demás paneles
+            // Desactivar a todos los demás
             for (PanelJugador otroPanel : todosLosPaneles) {
                 if (otroPanel != this) {
                     otroPanel.desactivarMonarca();
                 }
             }
-            // Ahora nos activamos a nosotros mismos
             this.esMonarca = true;
             this.lblIndicadorMonarca.setText("👑");
         } else {
-            // Si ya éramos monarca, simplemente nos desactivamos
             this.esMonarca = false;
             this.lblIndicadorMonarca.setText("");
         }
         repaint();
     }
-
-    // Nuevo método auxiliar para ser desactivado por otros
+    
     public void desactivarMonarca() {
         this.esMonarca = false;
         this.lblIndicadorMonarca.setText("");
         repaint();
     }
     
-    // Getters para el popup
+    // Getters
     public int getVidas() { return vidas; }
-    public int getDanioComandante() { return dañoComandante; }
+    public int getDanioComandante() { return getTotalDanioComandante(); }
     public int getVeneno() { return veneno; }
     public int getEnergia() { return energia; }
     public boolean esMonarca() { return esMonarca; }
 
+    // ==========================================
+    // MÉTODOS VISUALES
+    // ==========================================
+    
     private void cargarImagenFondo(String urlImagen) {
         if (urlImagen != null && !urlImagen.isEmpty()) {
             try {
@@ -249,6 +298,15 @@ public class PanelJugador extends JPanel {
         if (this.vidas < 20) lblVidas.setForeground(new Color(255, 80, 80));
         else if (this.vidas > 40) lblVidas.setForeground(new Color(100, 255, 100));
         else lblVidas.setForeground(Color.WHITE);
+        
+        // Comprobar derrota por vidas
+        if (this.vidas <= 0) {
+            JOptionPane.showMessageDialog(this, 
+                "¡" + jugador.getNombre() + " ha llegado a 0 vidas!\n\n¡HA PERDIDO LA PARTIDA!", 
+                "¡DERROTA!", 
+                JOptionPane.WARNING_MESSAGE);
+            eliminarJugador();
+        }
     }
 
     private void confirmarConcesion() {
@@ -270,11 +328,11 @@ public class PanelJugador extends JPanel {
 
     public void reiniciarPanel(int vidasIniciales) {
         this.vidas = vidasIniciales;
-        this.dañoComandante = 0;
         this.veneno = 0;
         this.energia = 0;
         this.esMonarca = false;
         this.eliminado = false;
+        this.dañoPorComandante.clear(); // Resetear el mapa de daño
         
         lblVidas.setText(String.valueOf(vidas));
         lblVidas.setForeground(Color.WHITE);
