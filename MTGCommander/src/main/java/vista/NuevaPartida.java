@@ -104,55 +104,89 @@ public class NuevaPartida extends JFrame {
 		dialogMensaje.setVisible(true);
 
 		// ==========================================
-		// 1. ZONA NORTE: HUD de Control (Estilo Moderno)
+		// 1. ZONA NORTE: HUD de Control (Rediseño Moderno)
 		// ==========================================
 		JPanel panelSuperior = new JPanel();
-		panelSuperior.setLayout(new FlowLayout(FlowLayout.CENTER, 30, 15));
-		panelSuperior.setOpaque(true); 
+		panelSuperior.setLayout(new FlowLayout(FlowLayout.CENTER, 40, 12));
+		panelSuperior.setOpaque(true);
+		panelSuperior.setBackground(new Color(45, 45, 48)); // Fondo oscuro integrado
 
 		// --- CRONÓMETRO ---
-		JPanel boxCrono = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+		JPanel boxCrono = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
 		boxCrono.setOpaque(false);
-		JLabel lblIconoCrono = new JLabel("⏱️");
-		lblIconoCrono.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
+		
+		JLabel lblIconoCrono = new JLabel("⏱");
+		lblIconoCrono.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 22));
+		lblIconoCrono.setForeground(new Color(180, 180, 180));
 		boxCrono.add(lblIconoCrono);
 		
 		lblCronometro = new JLabel("00:00");
-		lblCronometro.setFont(new Font("Segoe UI", Font.BOLD, 28));
-		lblCronometro.setForeground(new Color(100, 255, 100)); // Verde neón suave
+		lblCronometro.setFont(new Font("Segoe UI", Font.BOLD, 32));
+		lblCronometro.setForeground(new Color(100, 255, 100));
 		boxCrono.add(lblCronometro);
 		
 		JButton btnPausar = new JButton("⏸");
-		btnPausar.setFont(new Font("Segoe UI", Font.BOLD, 16));
-		btnPausar.setToolTipText("Pausar/Reanudar");
+		btnPausar.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 18));
+		btnPausar.setForeground(Color.WHITE);
+		btnPausar.setBackground(new Color(60, 60, 65));
+		btnPausar.setFocusPainted(false);
+		btnPausar.setBorderPainted(false);
+		btnPausar.setOpaque(true);
+		btnPausar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+		btnPausar.setToolTipText("Pausar/Reanudar cronómetro");
 		boxCrono.add(btnPausar);
+		
 		panelSuperior.add(boxCrono);
 
-		panelSuperior.add(new JLabel("|"));
+		// Separador vertical elegante
+		JLabel separador1 = new JLabel("│");
+		separador1.setFont(new Font("Segoe UI", Font.PLAIN, 24));
+		separador1.setForeground(new Color(80, 80, 85));
+		panelSuperior.add(separador1);
 
 		// --- TURNOS ---
-		JPanel boxTurno = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+		JPanel boxTurno = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
 		boxTurno.setOpaque(false);
-		JLabel lblIconoTurno = new JLabel("🔄");
-		lblIconoTurno.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
+		
+		JLabel lblIconoTurno = new JLabel("⟳");
+		lblIconoTurno.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 22));
+		lblIconoTurno.setForeground(new Color(180, 180, 180));
 		boxTurno.add(lblIconoTurno);
 		
 		lblTurno = new JLabel("1");
-		lblTurno.setFont(new Font("Segoe UI", Font.BOLD, 28));
-		lblTurno.setForeground(new Color(100, 200, 255)); // Azul neón suave
+		lblTurno.setFont(new Font("Segoe UI", Font.BOLD, 32));
+		lblTurno.setForeground(new Color(100, 200, 255));
 		boxTurno.add(lblTurno);
 		
 		JButton btnSiguienteTurno = new JButton("▶");
-		btnSiguienteTurno.setFont(new Font("Segoe UI", Font.BOLD, 16));
-		btnSiguienteTurno.setToolTipText("Siguiente Turno");
+		btnSiguienteTurno.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 18));
+		btnSiguienteTurno.setForeground(Color.WHITE);
+		btnSiguienteTurno.setBackground(new Color(60, 60, 65));
+		btnSiguienteTurno.setFocusPainted(false);
+		btnSiguienteTurno.setBorderPainted(false);
+		btnSiguienteTurno.setOpaque(true);
+		btnSiguienteTurno.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+		btnSiguienteTurno.setToolTipText("Siguiente turno");
 		boxTurno.add(btnSiguienteTurno);
+		
 		panelSuperior.add(boxTurno);
 
-		panelSuperior.add(new JLabel("|"));
+		// Separador vertical elegante
+		JLabel separador2 = new JLabel("│");
+		separador2.setFont(new Font("Segoe UI", Font.PLAIN, 24));
+		separador2.setForeground(new Color(80, 80, 85));
+		panelSuperior.add(separador2);
 
 		// --- DADOS ---
-		JButton btnDados = new JButton("🎲 Tirar Dado");
+		JButton btnDados = new JButton(" Tirar Dado");
 		btnDados.setFont(new Font("Segoe UI", Font.BOLD, 16));
+		btnDados.setForeground(Color.WHITE);
+		btnDados.setBackground(new Color(70, 70, 75));
+		btnDados.setFocusPainted(false);
+		btnDados.setBorderPainted(false);
+		btnDados.setOpaque(true);
+		btnDados.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+		btnDados.setToolTipText("Tirar dados virtuales");
 		panelSuperior.add(btnDados);
 
 		contentPane.add(panelSuperior, BorderLayout.NORTH);
@@ -217,10 +251,12 @@ public class NuevaPartida extends JFrame {
 					timer.stop();
 					btnPausar.setText("▶"); 
 					lblCronometro.setForeground(Color.RED);
+					lblIconoCrono.setForeground(Color.RED); // El icono también se pone rojo
 				} else {
 					timer.start();
 					btnPausar.setText("⏸"); 
 					lblCronometro.setForeground(new Color(100, 255, 100));
+					lblIconoCrono.setForeground(new Color(180, 180, 180)); // Vuelve al gris
 				}
 			}
 		});
@@ -241,22 +277,35 @@ public class NuevaPartida extends JFrame {
 			}
 		});
 		
-		// Botón Reiniciar
+		// Botón Reiniciar (Con confirmación de seguridad)
 		btnReiniciar.addActionListener(new ActionListener() {
 		       public void actionPerformed(ActionEvent e) {
-		           segundosTranscurridos = 0;
-		           lblCronometro.setText("00:00");
-		           if (!timer.isRunning()) {
-		               timer.start();
-		               btnPausar.setText("⏸"); // 🟢 Icono corregido
-		               lblCronometro.setForeground(new Color(100, 255, 100)); // 🟢 Color neón corregido
+		           int opcion = JOptionPane.showConfirmDialog(NuevaPartida.this,
+		                   "¿Seguro que quieres reiniciar la partida?\nSe perderá todo el progreso actual.",
+		                   "Confirmar Reinicio", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+		           if (opcion == JOptionPane.YES_OPTION) {
+		               // 1. Resetear cronómetro
+		               segundosTranscurridos = 0;
+		               lblCronometro.setText("00:00");
+		               if (!timer.isRunning()) {
+		                   timer.start();
+		                   btnPausar.setText("⏸");
+		                   lblCronometro.setForeground(new Color(100, 255, 100));
+		               }
+		               
+		               // 2. Resetear todos los paneles de jugador
+		               for (PanelJugador panel : panelesDeJuego) {
+		                   panel.reiniciarPanel(vidasInicialesGlobales);
+		               }
+
+		               // 3. Limpiar la lista de eliminados para que las posiciones se reseteen
+		               ordenDeEliminacion.clear();
+		               
+		               JOptionPane.showMessageDialog(NuevaPartida.this, 
+		                   "Partida y cronómetro reiniciados a 0.", 
+		                   "Partida Reiniciada", JOptionPane.INFORMATION_MESSAGE);
 		           }
-		           
-		           for (PanelJugador panel : panelesDeJuego) {
-		               panel.reiniciarPanel(vidasInicialesGlobales);
-		           }
-		           
-		           JOptionPane.showMessageDialog(null, "Partida y cronómetro reiniciados a 0.");
 		       }
 		});
 		   
@@ -266,10 +315,14 @@ public class NuevaPartida extends JFrame {
 		           turnoActual++;
 		           lblTurno.setText(String.valueOf(turnoActual));
 		           
+		           // Efecto visual: parpadeo en el número y el icono
 		           lblTurno.setForeground(Color.RED);
+		           lblIconoTurno.setForeground(Color.RED);
+		           
 		           Timer flashTimer = new Timer(300, new ActionListener() {
 		               public void actionPerformed(ActionEvent e) {
-		                   lblTurno.setForeground(new Color(100, 200, 255)); // 🟢 Color neón corregido
+		                   lblTurno.setForeground(new Color(100, 200, 255));
+		                   lblIconoTurno.setForeground(new Color(180, 180, 180));
 		               }
 		           });
 		           flashTimer.setRepeats(false);

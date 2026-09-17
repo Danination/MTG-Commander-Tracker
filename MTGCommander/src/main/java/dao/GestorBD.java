@@ -155,16 +155,30 @@ public class GestorBD {
      * Obtiene las estadísticas de todos los jugadores para el Ranking.
      * Devuelve una lista de arrays de Object: [Nombre, Partidas, Victorias, %Victoria]
      */
+    /**
+     * Obtiene las estadísticas completas de todos los jugadores para el Ranking.
+     * Devuelve: [Nombre, Partidas, Victorias, %Victoria, PosiciónPromedio, Racha]
+     */
     public static List<Object[]> obtenerRanking() {
         List<Object[]> ranking = new ArrayList<>();
         
-        // Consulta SQL avanzada: Cuenta partidas, suma victorias y calcula el porcentaje
         String sql = """
             SELECT 
-                j.nombre, 
+                j.nombre,
                 COUNT(r.id) as partidas,
                 SUM(CASE WHEN r.posicion = 1 THEN 1 ELSE 0 END) as victorias,
-                ROUND(100.0 * SUM(CASE WHEN r.posicion = 1 THEN 1 ELSE 0 END) / COUNT(r.id), 1) as porcentaje
+                ROUND(100.0 * SUM(CASE WHEN r.posicion = 1 THEN 1 ELSE 0 END) / COUNT(r.id), 1) as porcentaje,
+                ROUND(AVG(r.posicion), 1) as posicion_promedio,
+                -- Calcular racha actual (victorias/derrotas consecutivas)
+                (SELECT COUNT(*) FROM resultados r2 
+                 WHERE r2.jugador_id = j.id 
+                 AND r2.partida_id >= (
+                     SELECT MAX(partida_id) FROM resultados r3 
+                     WHERE r3.jugador_id = j.id 
+                     AND (r3.posicion != 1 OR r3.posicion = 1)
+                 ) - 10
+                 AND r2.posicion = 1
+                ) as racha_victorias
             FROM jugadores j
             JOIN resultados r ON j.id = r.jugador_id
             GROUP BY j.id, j.nombre
@@ -176,11 +190,13 @@ public class GestorBD {
              ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
-                Object[] fila = new Object[4];
+                Object[] fila = new Object[6];
                 fila[0] = rs.getString("nombre");
                 fila[1] = rs.getInt("partidas");
                 fila[2] = rs.getInt("victorias");
                 fila[3] = rs.getDouble("porcentaje") + "%";
+                fila[4] = rs.getDouble("posicion_promedio");
+                fila[5] = rs.getInt("racha_victorias") + "🔥"; // Emoji de fuego para la racha
                 ranking.add(fila);
             }
         } catch (Exception e) {

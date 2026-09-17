@@ -32,6 +32,17 @@ public class PanelJugador extends JPanel {
 
     private static final long serialVersionUID = 1L;
     
+    // Frases aleatorias para cuando alguien intenta conceder
+    private static final String[] FRASES_CONCEDER = {
+        "¿Seguro que te vas a rajar? ️",
+        "¿De verdad quieres abandonar la partida? 🏃‍♂️",
+        "¿No hay vuelta atrás? ¡Piénsalo bien! 🤔",
+        "¿Te rindes? ¡Aún puedes remontar! (O no) 😅",
+        "¿Conceder? Los cobardes nunca ganan... 😏",
+        "¿Estás seguro? Tu comandante llorará. 😢",
+        "¡Un momento! ¿Y si te dejo vivir 5 minutitos más? "
+    };
+    
     // Datos
     private Jugador jugador;
     private int vidas;
@@ -349,12 +360,16 @@ public class PanelJugador extends JPanel {
 
     private void confirmarConcesion() {
         if (eliminado) return;
+        
+        // Elegir una frase aleatoria
+        String fraseRandom = FRASES_CONCEDER[new java.util.Random().nextInt(FRASES_CONCEDER.length)];
+        
         int opcion = JOptionPane.showConfirmDialog(this,
-                "¿Seguro que " + jugador.getNombre() + " concede?\n\n¡Esta acción es definitiva y no podrás volver a la partida!", 
+                fraseRandom + "\n\n¡Esta acción es definitiva y no podrás volver a la partida!", 
                 "Confirmar Concesión", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
                 
         if (opcion == JOptionPane.YES_OPTION) {
-            this.haConcedido = true; // 🟢 Activamos la bandera
+            this.haConcedido = true; // Activamos la bandera de "No revivir"
             ordenDeEliminacion.add(jugador);
             eliminarJugador();
         }
@@ -362,10 +377,17 @@ public class PanelJugador extends JPanel {
 
     private void eliminarJugador() {
         eliminado = true;
-        // No deshabilitamos los botones de vida para permitir revivir
+        
         btnConceder.setEnabled(false);
         btnConceder.setText("Fuera");
         btnConceder.setBackground(Color.DARK_GRAY);
+        
+        //  Si ha concedido, bloqueamos los botones de vida para siempre
+        if (haConcedido) {
+            btnMasVida.setEnabled(false);
+            btnMenosVida.setEnabled(false);
+        }
+        
         repaint();
     }
 
