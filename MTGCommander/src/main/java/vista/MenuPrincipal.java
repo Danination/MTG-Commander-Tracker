@@ -20,16 +20,23 @@ public class MenuPrincipal extends JFrame {
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					MenuPrincipal frame = new MenuPrincipal();
-					frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
+	    // 🟢 ACTIVAR MODO OSCURO MODERNO
+	    try {
+	        com.formdev.flatlaf.FlatDarkLaf.setup();
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
+
+	    EventQueue.invokeLater(new Runnable() {
+	        public void run() {
+	            try {
+	                MenuPrincipal frame = new MenuPrincipal();
+	                frame.setVisible(true);
+	            } catch (Exception e) {
+	                e.printStackTrace();
+	            }
+	        }
+	    });
 	}
 
 	/**

@@ -9,7 +9,9 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import javax.swing.JButton;
@@ -29,6 +31,9 @@ public class NuevaPartida extends JFrame {
 	private List<PanelJugador> panelesDeJuego = new ArrayList<>();
 	private int vidasInicialesGlobales; // Para saber a cuántas vidas resetear
 	
+	// 🟢 NUEVO: Lista para rastrear el orden en que los jugadores son eliminados
+	private List<Jugador> ordenDeEliminacion = new ArrayList<>();
+	
 	private static final long serialVersionUID = 1L;
 	private JPanel contentPane;
 	
@@ -46,7 +51,6 @@ public class NuevaPartida extends JFrame {
 			public void run() {
 				try {
 					List<Jugador> prueba = new ArrayList<>();
-					
 					NuevaPartida frame = new NuevaPartida(prueba, 40);
 					frame.setVisible(true);
 				} catch (Exception e) {
@@ -62,7 +66,7 @@ public class NuevaPartida extends JFrame {
 		this.jugadoresEnPartida = jugadoresSeleccionados;
 		setTitle("Mesa de Juego - Commander");
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		setBounds(100, 100, 900, 600); 
+		setBounds(100, 100, 1100, 750); // Un poco más grande para mejor visualización
 		
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(10, 10, 10, 10));
@@ -78,74 +82,77 @@ public class NuevaPartida extends JFrame {
 			"Recuerda: el daño de comandante es acumulativo. 💀",
 			"¡A por esa victoria o a morir en el intento! 🔥",
 			"Que la suerte (y el mana) esté con vosotros. 🌟",
-			"Si tienes Sol Ring en turno 1 pagas la cena",
-			
+			"Si tienes Sol Ring en turno 1 pagas la cena 🍻"
 		};
 		String fraseAleatoria = frasesInicio[new Random().nextInt(frasesInicio.length)];
 		
-		// Creamos un diálogo personalizado en lugar de un JOptionPane
 		JDialog dialogMensaje = new JDialog(this, "¡Nueva Partida!", true);
 		dialogMensaje.setLayout(new FlowLayout(FlowLayout.CENTER));
 		JLabel lblMensaje = new JLabel(fraseAleatoria, SwingConstants.CENTER);
-		lblMensaje.setFont(new Font("Tahoma", Font.BOLD, 16));
+		lblMensaje.setFont(new Font("Segoe UI", Font.BOLD, 16));
 		dialogMensaje.add(lblMensaje);
-		dialogMensaje.setSize(350, 120);
-		dialogMensaje.setLocationRelativeTo(this); // Centrado en la pantalla
+		dialogMensaje.setSize(400, 120);
+		dialogMensaje.setLocationRelativeTo(this);
 		
-		// Timer interno que cierra el mensaje a los 3000 ms (3 segundos)
 		Timer timerMensaje = new Timer(3000, new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				dialogMensaje.dispose(); // Cierra el mensaje
+				dialogMensaje.dispose();
 			}
 		});
-		timerMensaje.setRepeats(false); // Solo se ejecuta una vez
+		timerMensaje.setRepeats(false);
 		timerMensaje.start();
-		dialogMensaje.setVisible(true); // Muestra el mensaje (bloquea hasta que se cierre)
+		dialogMensaje.setVisible(true);
 
 		// ==========================================
-		// 1. ZONA NORTE: Cronómetro, Turnos y Dados
+		// 1. ZONA NORTE: HUD de Control (Estilo Moderno)
 		// ==========================================
 		JPanel panelSuperior = new JPanel();
-		panelSuperior.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10)); // Más espacio entre elementos
+		panelSuperior.setLayout(new FlowLayout(FlowLayout.CENTER, 30, 15));
+		panelSuperior.setOpaque(true); 
 
-		// --- Cronómetro ---
-		JLabel lblTextoCrono = new JLabel("Tiempo:");
-		lblTextoCrono.setFont(new Font("Tahoma", Font.BOLD, 16));
-		panelSuperior.add(lblTextoCrono);
-
+		// --- CRONÓMETRO ---
+		JPanel boxCrono = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+		boxCrono.setOpaque(false);
+		JLabel lblIconoCrono = new JLabel("⏱️");
+		lblIconoCrono.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
+		boxCrono.add(lblIconoCrono);
+		
 		lblCronometro = new JLabel("00:00");
-		lblCronometro.setFont(new Font("Tahoma", Font.BOLD, 24));
-		lblCronometro.setForeground(new Color(0, 100, 0));
-		panelSuperior.add(lblCronometro);
+		lblCronometro.setFont(new Font("Segoe UI", Font.BOLD, 28));
+		lblCronometro.setForeground(new Color(100, 255, 100)); // Verde neón suave
+		boxCrono.add(lblCronometro);
+		
+		JButton btnPausar = new JButton("⏸");
+		btnPausar.setFont(new Font("Segoe UI", Font.BOLD, 16));
+		btnPausar.setToolTipText("Pausar/Reanudar");
+		boxCrono.add(btnPausar);
+		panelSuperior.add(boxCrono);
 
-		JButton btnPausarReanudar = new JButton("Pausar");
-		btnPausarReanudar.setFont(new Font("Tahoma", Font.BOLD, 12));
-		panelSuperior.add(btnPausarReanudar);
-
-		// --- Separador visual ---
 		panelSuperior.add(new JLabel("|"));
 
-		// --- Contador de Turnos ---
-		JLabel lblTextoTurno = new JLabel("Turno:");
-		lblTextoTurno.setFont(new Font("Tahoma", Font.BOLD, 16));
-		panelSuperior.add(lblTextoTurno);
-
+		// --- TURNOS ---
+		JPanel boxTurno = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+		boxTurno.setOpaque(false);
+		JLabel lblIconoTurno = new JLabel("🔄");
+		lblIconoTurno.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
+		boxTurno.add(lblIconoTurno);
+		
 		lblTurno = new JLabel("1");
-		lblTurno.setFont(new Font("Tahoma", Font.BOLD, 24));
-		lblTurno.setForeground(new Color(0, 0, 150)); // Azul para diferenciar
-		panelSuperior.add(lblTurno);
+		lblTurno.setFont(new Font("Segoe UI", Font.BOLD, 28));
+		lblTurno.setForeground(new Color(100, 200, 255)); // Azul neón suave
+		boxTurno.add(lblTurno);
+		
+		JButton btnSiguienteTurno = new JButton("▶");
+		btnSiguienteTurno.setFont(new Font("Segoe UI", Font.BOLD, 16));
+		btnSiguienteTurno.setToolTipText("Siguiente Turno");
+		boxTurno.add(btnSiguienteTurno);
+		panelSuperior.add(boxTurno);
 
-		JButton btnSiguienteTurno = new JButton("Siguiente Turno >>");
-		btnSiguienteTurno.setFont(new Font("Tahoma", Font.BOLD, 12));
-		btnSiguienteTurno.setBackground(new Color(255, 200, 0)); // Amarillo para resaltar
-		panelSuperior.add(btnSiguienteTurno);
-
-		// --- Separador visual ---
 		panelSuperior.add(new JLabel("|"));
 
-		// --- Botón de Dados ---
-		JButton btnDados = new JButton(" Tirar Dados");
-		btnDados.setFont(new Font("Tahoma", Font.BOLD, 14));
+		// --- DADOS ---
+		JButton btnDados = new JButton("🎲 Tirar Dado");
+		btnDados.setFont(new Font("Segoe UI", Font.BOLD, 16));
 		panelSuperior.add(btnDados);
 
 		contentPane.add(panelSuperior, BorderLayout.NORTH);
@@ -157,14 +164,15 @@ public class NuevaPartida extends JFrame {
 		panelMesa.setLayout(new GridLayout(0, 2, 10, 10)); // 2 columnas, filas automáticas
 		contentPane.add(panelMesa, BorderLayout.CENTER);
 
-		List<PanelJugador> panelesDeJuego = new ArrayList<>(); // Lista que compartiremos
+		// 🟢 CORRECCIÓN: Usamos la lista global de la clase, no creamos una nueva local
+		this.panelesDeJuego.clear(); 
 
 		for (Jugador j : jugadoresSeleccionados) {
-		    // Le pasamos la lista (aunque esté vacía al principio, se llenará y todos la compartirán)
-		    PanelJugador panel = new PanelJugador(j, vidasIniciales, jugadoresSeleccionados, panelesDeJuego);
+		    // 🟢 CORRECCIÓN: Pasamos los 5 parámetros, incluyendo ordenDeEliminacion
+		    PanelJugador panel = new PanelJugador(j, vidasIniciales, jugadoresSeleccionados, this.panelesDeJuego, this.ordenDeEliminacion);
 		    
-		    panelesDeJuego.add(panel); // La añadimos a la lista
-		    panelMesa.add(panel);      // La añadimos a la mesa visual
+		    this.panelesDeJuego.add(panel);
+		    panelMesa.add(panel);
 		}
 
 		// ==========================================
@@ -174,15 +182,15 @@ public class NuevaPartida extends JFrame {
 		panelInferior.setLayout(new GridLayout(1, 3, 10, 10));
 		
 		JButton btnVolver = new JButton("Volver al Menú");
-		btnVolver.setFont(new Font("Tahoma", Font.BOLD, 14));
+		btnVolver.setFont(new Font("Segoe UI", Font.BOLD, 14));
 		panelInferior.add(btnVolver);
 		
 		JButton btnReiniciar = new JButton("Reiniciar Partida");
-		btnReiniciar.setFont(new Font("Tahoma", Font.BOLD, 14));
+		btnReiniciar.setFont(new Font("Segoe UI", Font.BOLD, 14));
 		panelInferior.add(btnReiniciar);
 		
 		JButton btnFinalizar = new JButton("Finalizar Partida");
-		btnFinalizar.setFont(new Font("Tahoma", Font.BOLD, 14));
+		btnFinalizar.setFont(new Font("Segoe UI", Font.BOLD, 14));
 		panelInferior.add(btnFinalizar);
 		
 		contentPane.add(panelInferior, BorderLayout.SOUTH);
@@ -191,7 +199,7 @@ public class NuevaPartida extends JFrame {
 		// 4. LÓGICA DE LOS BOTONES
 		// ==========================================
 		
-		// Lógica del Cronómetro (se actualiza cada 1 segundo)
+		// Lógica del Cronómetro
 		timer = new Timer(1000, new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				segundosTranscurridos++;
@@ -200,19 +208,19 @@ public class NuevaPartida extends JFrame {
 				lblCronometro.setText(String.format("%02d:%02d", minutos, segundos));
 			}
 		});
-		timer.start(); // Arrancamos el cronómetro al crear la ventana
+		timer.start();
 
-		// Botón Pausar / Reanudar
-		btnPausarReanudar.addActionListener(new ActionListener() {
+		// Lógica del botón Pausar / Reanudar
+		btnPausar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (timer.isRunning()) {
 					timer.stop();
-					btnPausarReanudar.setText("Reanudar");
-					lblCronometro.setForeground(Color.RED); // Indicador visual de pausa
+					btnPausar.setText("▶"); 
+					lblCronometro.setForeground(Color.RED);
 				} else {
 					timer.start();
-					btnPausarReanudar.setText("Pausar");
-					lblCronometro.setForeground(new Color(0, 100, 0)); // Vuelve a verde
+					btnPausar.setText("⏸"); 
+					lblCronometro.setForeground(new Color(100, 255, 100));
 				}
 			}
 		});
@@ -220,8 +228,7 @@ public class NuevaPartida extends JFrame {
 		// Botón Volver
 		btnVolver.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				timer.stop(); // Detenemos el cronómetro al salir
-				
+				timer.stop();
 				int opcion = JOptionPane.showConfirmDialog(null, 
 					"¿Seguro que quieres salir? Se perderá el progreso.", "Confirmar", JOptionPane.YES_NO_OPTION);
 				if (opcion == JOptionPane.YES_OPTION) {
@@ -229,63 +236,54 @@ public class NuevaPartida extends JFrame {
 					MenuPrincipal menu = new MenuPrincipal();
 					menu.setVisible(true);
 				} else {
-					timer.start(); // Si cancela la salida, reanudamos el tiempo
+					timer.start();
 				}
 			}
 		});
 		
-		   btnReiniciar.addActionListener(new ActionListener() {
+		// Botón Reiniciar
+		btnReiniciar.addActionListener(new ActionListener() {
 		       public void actionPerformed(ActionEvent e) {
-		           // 1. Resetear cronómetro
 		           segundosTranscurridos = 0;
 		           lblCronometro.setText("00:00");
 		           if (!timer.isRunning()) {
 		               timer.start();
-		               btnPausarReanudar.setText("Pausar");
-		               lblCronometro.setForeground(new Color(0, 100, 0));
+		               btnPausar.setText("⏸"); // 🟢 Icono corregido
+		               lblCronometro.setForeground(new Color(100, 255, 100)); // 🟢 Color neón corregido
 		           }
 		           
-		           // 2. ¡Resetear todos los paneles de jugador!
 		           for (PanelJugador panel : panelesDeJuego) {
 		               panel.reiniciarPanel(vidasInicialesGlobales);
 		           }
 		           
 		           JOptionPane.showMessageDialog(null, "Partida y cronómetro reiniciados a 0.");
 		       }
-		   });
+		});
 		   
 		// Lógica del botón "Siguiente Turno"
-		   btnSiguienteTurno.addActionListener(new ActionListener() {
+		btnSiguienteTurno.addActionListener(new ActionListener() {
 		       public void actionPerformed(ActionEvent e) {
 		           turnoActual++;
 		           lblTurno.setText(String.valueOf(turnoActual));
 		           
-		           // Efecto visual: parpadeo rápido para indicar cambio
 		           lblTurno.setForeground(Color.RED);
 		           Timer flashTimer = new Timer(300, new ActionListener() {
 		               public void actionPerformed(ActionEvent e) {
-		                   lblTurno.setForeground(new Color(0, 0, 150)); // Vuelve a azul
+		                   lblTurno.setForeground(new Color(100, 200, 255)); // 🟢 Color neón corregido
 		               }
 		           });
 		           flashTimer.setRepeats(false);
 		           flashTimer.start();
 		       }
-		   });
+		});
 
-		   // Lógica del botón "Tirar Dados"
-		   btnDados.addActionListener(new ActionListener() {
+		// Lógica del botón "Tirar Dados"
+		btnDados.addActionListener(new ActionListener() {
 		       public void actionPerformed(ActionEvent e) {
-		           // Opciones de dados comunes en Magic
 		           String[] opciones = {"d6 (6 caras)", "d20 (20 caras)", "d100 (100 caras)"};
-		           
 		           String seleccion = (String) JOptionPane.showInputDialog(
-		               NuevaPartida.this,
-		               "¿Qué dado quieres tirar?",
-		               "Lanzador de Dados",
-		               JOptionPane.QUESTION_MESSAGE,
-		               null,
-		               opciones,
-		               opciones[0]
+		               NuevaPartida.this, "¿Qué dado quieres tirar?", "Lanzador de Dados",
+		               JOptionPane.QUESTION_MESSAGE, null, opciones, opciones[0]
 		           );
 		           
 		           if (seleccion != null) {
@@ -296,90 +294,81 @@ public class NuevaPartida extends JFrame {
 		               
 		               JOptionPane.showMessageDialog(NuevaPartida.this, 
 		                   "¡Has tirado un " + seleccion + "!\n\nResultado: " + resultado, 
-		                   "Resultado del Dado", 
-		                   JOptionPane.INFORMATION_MESSAGE);
+		                   "Resultado del Dado", JOptionPane.INFORMATION_MESSAGE);
 		           }
 		       }
-		   });
+		});
 		
-			// Botón Finalizar
-			btnFinalizar.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					timer.stop(); // Detenemos el cronómetro
+		// Botón Finalizar
+		btnFinalizar.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				timer.stop();
+				
+				String fechaActual = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+				int duracion = segundosTranscurridos / 60;
+				
+				JPanel panelPosiciones = new JPanel(new java.awt.GridLayout(jugadoresEnPartida.size() + 1, 2, 10, 10));
+				panelPosiciones.setBorder(javax.swing.BorderFactory.createTitledBorder("Asigna la posición final a cada jugador"));
+				
+				panelPosiciones.add(new JLabel("Jugador", javax.swing.SwingConstants.CENTER));
+				panelPosiciones.add(new JLabel("Posición", javax.swing.SwingConstants.CENTER));
+				
+				Map<modelo.Jugador, javax.swing.JComboBox<Integer>> combosPosicion = new HashMap<>();
+				
+				for (modelo.Jugador j : jugadoresEnPartida) {
+					panelPosiciones.add(new JLabel(j.getNombre(), javax.swing.SwingConstants.LEFT));
 					
-					// 1. Preparar datos de la partida
-					String fechaActual = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
-					int duracion = segundosTranscurridos / 60; // Minutos
-					
-					// 2. Crear un panel personalizado para asignar posiciones
-					JPanel panelPosiciones = new JPanel(new java.awt.GridLayout(jugadoresEnPartida.size() + 1, 2, 10, 10));
-					panelPosiciones.setBorder(javax.swing.BorderFactory.createTitledBorder("Asigna la posición final a cada jugador"));
-					
-					// Cabeceras de la tabla
-					panelPosiciones.add(new JLabel("Jugador", javax.swing.SwingConstants.CENTER));
-					panelPosiciones.add(new JLabel("Posición", javax.swing.SwingConstants.CENTER));
-					
-					// Mapa para guardar los combos y poder leer sus valores después
-					java.util.Map<modelo.Jugador, javax.swing.JComboBox<Integer>> combosPosicion = new java.util.HashMap<>();
-					
-					for (modelo.Jugador j : jugadoresEnPartida) {
-						panelPosiciones.add(new JLabel(j.getNombre(), javax.swing.SwingConstants.LEFT));
-						
-						javax.swing.JComboBox<Integer> combo = new javax.swing.JComboBox<>();
-						// Añadimos opciones del 1 al número total de jugadores
-						for (int i = 1; i <= jugadoresEnPartida.size(); i++) {
-							combo.addItem(i);
-						}
-						combosPosicion.put(j, combo);
-						panelPosiciones.add(combo);
+					javax.swing.JComboBox<Integer> combo = new javax.swing.JComboBox<>();
+					for (int i = 1; i <= jugadoresEnPartida.size(); i++) {
+						combo.addItem(i);
 					}
 					
-					// 3. Mostrar el diálogo con el panel personalizado
-					int opcion = JOptionPane.showConfirmDialog(
-						NuevaPartida.this, 
-						panelPosiciones, 
-						"Finalizar Partida - Tiempo: " + lblCronometro.getText(), 
-						JOptionPane.OK_CANCEL_OPTION, 
-						JOptionPane.QUESTION_MESSAGE
-					);
+					// 🟢 LÓGICA DE PRE-SELECCIÓN AUTOMÁTICA
+					int posicionSugerida = 1;
+					int indiceEliminacion = ordenDeEliminacion.indexOf(j);
 					
-					// 4. Si el usuario pulsa "Aceptar" (OK)
-					if (opcion == JOptionPane.OK_OPTION) {
-						
-						// Guardar la partida en la BD y obtener su ID
-						int idPartida = dao.GestorBD.guardarPartida(fechaActual, duracion, "Partida normal");
-						
-						if (idPartida != -1) {
-							String ganador = "Desconocido";
+					if (indiceEliminacion != -1) {
+						posicionSugerida = jugadoresEnPartida.size() - indiceEliminacion;
+					}
+					combo.setSelectedItem(posicionSugerida);
+					
+					combosPosicion.put(j, combo);
+					panelPosiciones.add(combo);
+				}
+				
+				int opcion = JOptionPane.showConfirmDialog(
+					NuevaPartida.this, panelPosiciones, 
+					"Finalizar Partida - Tiempo: " + lblCronometro.getText(), 
+					JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE
+				);
+				
+				if (opcion == JOptionPane.OK_OPTION) {
+					int idPartida = dao.GestorBD.guardarPartida(fechaActual, duracion, "Partida normal");
+					
+					if (idPartida != -1) {
+						String ganador = "Desconocido";
+						for (modelo.Jugador j : jugadoresEnPartida) {
+							int posicion = (int) combosPosicion.get(j).getSelectedItem();
+							String tipo = (posicion == 1) ? "Victoria" : "Derrota";
 							
-							// 5. Guardar los resultados de CADA jugador
-							for (modelo.Jugador j : jugadoresEnPartida) {
-								int posicion = (int) combosPosicion.get(j).getSelectedItem();
-								String tipo = (posicion == 1) ? "Victoria" : "Derrota";
-								
-								if (posicion == 1) {
-									ganador = j.getNombre();
-								}
-								
-								// Guardamos en la BD
-								dao.GestorBD.guardarResultado(idPartida, j.getId(), posicion, tipo);
+							if (posicion == 1) {
+								ganador = j.getNombre();
 							}
-							
-							JOptionPane.showMessageDialog(NuevaPartida.this, 
-								"¡Partida guardada en el Historial!\n\n🏆 Ganador: " + ganador,
-								"Partida Finalizada",
-								JOptionPane.INFORMATION_MESSAGE);
+							dao.GestorBD.guardarResultado(idPartida, j.getId(), posicion, tipo);
 						}
 						
-						dispose();
-						MenuPrincipal menu = new MenuPrincipal();
-						menu.setVisible(true);
-						
-					} else {
-						// Si el usuario cancela, reanudamos el cronómetro por si acaso
-						timer.start();
-				 }
+						JOptionPane.showMessageDialog(NuevaPartida.this, 
+							"¡Partida guardada en el Historial!\n\n🏆 Ganador: " + ganador,
+							"Partida Finalizada", JOptionPane.INFORMATION_MESSAGE);
+					}
+					
+					dispose();
+					MenuPrincipal menu = new MenuPrincipal();
+					menu.setVisible(true);
+				} else {
+					timer.start();
 				}
-			});
+			}
+		});
 	}
 }

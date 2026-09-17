@@ -9,6 +9,8 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.net.URL;
@@ -38,10 +40,11 @@ public class PanelJugador extends JPanel {
     private boolean esMonarca;
     private boolean eliminado = false;
     private Image imagenFondo;
+    
     private List<Jugador> todosLosJugadores;
     private List<PanelJugador> todosLosPaneles;
+    private List<Jugador> ordenDeEliminacion; // 🟢 NUEVO: Lista de eliminación
     
-    // NUEVO: Mapa para rastrear el daño de comandante POR jugador enemigo
     private Map<Jugador, Integer> dañoPorComandante = new HashMap<>();
 
     // Componentes Visuales
@@ -53,10 +56,13 @@ public class PanelJugador extends JPanel {
     private JButton btnMasVida;
     private JButton btnMenosVida;
     private JButton btnConceder;
+    private boolean haConcedido = false;
 
+    // 🟢 CONSTRUCTOR CON 5 PARÁMETROS (Para que coincida con NuevaPartida)
     public PanelJugador(Jugador jugador, int vidasIniciales, 
                         List<Jugador> todosLosJugadores, 
-                        List<PanelJugador> todosLosPaneles) {
+                        List<PanelJugador> todosLosPaneles,
+                        List<Jugador> ordenDeEliminacion) {
         this.jugador = jugador;
         this.vidas = vidasIniciales;
         this.veneno = 0;
@@ -64,6 +70,7 @@ public class PanelJugador extends JPanel {
         this.esMonarca = false;
         this.todosLosJugadores = todosLosJugadores;
         this.todosLosPaneles = todosLosPaneles;
+        this.ordenDeEliminacion = ordenDeEliminacion; // 🟢 Guardamos la referencia
 
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(400, 500));
@@ -71,33 +78,35 @@ public class PanelJugador extends JPanel {
         
         cargarImagenFondo(jugador.getComandanteImagenUrl());
 
-        // Botón MENOS (izquierda)
-        btnMenosVida = new JButton("-");
-        btnMenosVida.setFont(new Font("Arial", Font.BOLD, 80));
-        btnMenosVida.setForeground(Color.WHITE);
-        btnMenosVida.setBackground(new Color(0, 0, 0, 100));
-        btnMenosVida.setOpaque(true);
-        btnMenosVida.setFocusPainted(false);
+     // Botón MENOS (izquierda) - Sin fondo, solo símbolo flotante
+        btnMenosVida = new JButton("−");
+        btnMenosVida.setFont(new Font("Segoe UI", Font.BOLD, 100));
+        btnMenosVida.setForeground(new Color(255, 255, 255, 200)); // Blanco semitransparente
+        btnMenosVida.setOpaque(false); // Sin fondo
+        btnMenosVida.setContentAreaFilled(false);
         btnMenosVida.setBorderPainted(false);
-        btnMenosVida.setPreferredSize(new Dimension(80, 500));
+        btnMenosVida.setFocusPainted(false);
+        btnMenosVida.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnMenosVida.setPreferredSize(new Dimension(100, 500));
         btnMenosVida.addActionListener(e -> cambiarVidas(-1));
         add(btnMenosVida, BorderLayout.WEST);
 
-        // Botón MÁS (derecha)
+        // Botón MÁS (derecha) - Sin fondo, solo símbolo flotante
         btnMasVida = new JButton("+");
-        btnMasVida.setFont(new Font("Arial", Font.BOLD, 80));
-        btnMasVida.setForeground(Color.WHITE);
-        btnMasVida.setBackground(new Color(0, 0, 0, 100));
-        btnMasVida.setOpaque(true);
-        btnMasVida.setFocusPainted(false);
+        btnMasVida.setFont(new Font("Segoe UI", Font.BOLD, 100));
+        btnMasVida.setForeground(new Color(255, 255, 255, 200));
+        btnMasVida.setOpaque(false);
+        btnMasVida.setContentAreaFilled(false);
         btnMasVida.setBorderPainted(false);
-        btnMasVida.setPreferredSize(new Dimension(80, 500));
+        btnMasVida.setFocusPainted(false);
+        btnMasVida.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnMasVida.setPreferredSize(new Dimension(100, 500));
         btnMasVida.addActionListener(e -> cambiarVidas(1));
         add(btnMasVida, BorderLayout.EAST);
 
         // Vida gigante (centro)
         lblVidas = new JLabel(String.valueOf(vidas), SwingConstants.CENTER);
-        lblVidas.setFont(new Font("Arial", Font.BOLD, 160));
+        lblVidas.setFont(new Font("Segoe UI", Font.BOLD, 160));
         lblVidas.setForeground(Color.WHITE);
         lblVidas.setOpaque(false);
         add(lblVidas, BorderLayout.CENTER);
@@ -117,7 +126,7 @@ public class PanelJugador extends JPanel {
             lblFotoComandante.setIcon(icon);
         } else {
             lblFotoComandante.setText("?");
-            lblFotoComandante.setFont(new Font("Arial", Font.BOLD, 40));
+            lblFotoComandante.setFont(new Font("Segoe UI", Font.BOLD, 40));
             lblFotoComandante.setForeground(Color.WHITE);
             lblFotoComandante.setHorizontalAlignment(SwingConstants.CENTER);
         }
@@ -132,7 +141,7 @@ public class PanelJugador extends JPanel {
         panelInferior.add(lblFotoComandante);
         
         lblNombre = new JLabel(jugador.getNombre(), SwingConstants.CENTER);
-        lblNombre.setFont(new Font("Arial", Font.BOLD, 20));
+        lblNombre.setFont(new Font("Segoe UI", Font.BOLD, 20));
         lblNombre.setForeground(Color.WHITE);
         lblNombre.setOpaque(true);
         lblNombre.setBackground(new Color(0, 0, 0, 180));
@@ -141,7 +150,7 @@ public class PanelJugador extends JPanel {
         
         // Indicador de Monarca (corona)
         lblIndicadorMonarca = new JLabel("");
-        lblIndicadorMonarca.setFont(new Font("Arial", Font.BOLD, 24));
+        lblIndicadorMonarca.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
         lblIndicadorMonarca.setForeground(new Color(255, 215, 0));
         panelInferior.add(lblIndicadorMonarca);
         
@@ -151,11 +160,22 @@ public class PanelJugador extends JPanel {
         JPanel panelSuperior = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         panelSuperior.setOpaque(false);
         btnConceder = new JButton("Conceder");
-        btnConceder.setFont(new Font("Arial", Font.BOLD, 12));
+        btnConceder.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btnConceder.setBackground(new Color(200, 0, 0));
         btnConceder.setForeground(Color.WHITE);
         btnConceder.setFocusPainted(false);
-        btnConceder.addActionListener(e -> confirmarConcesion());
+        btnConceder.addActionListener(e -> {
+            if (eliminado) {
+                int opcion = JOptionPane.showConfirmDialog(this,
+                    "¿Fue un error? ¿Quieres revivir a " + jugador.getNombre() + " con 1 vida?", 
+                    "Revivir Jugador", JOptionPane.YES_NO_OPTION);
+                if (opcion == JOptionPane.YES_OPTION) {
+                    revivirJugador();
+                }
+            } else {
+                confirmarConcesion();
+            }
+        });
         panelSuperior.add(btnConceder);
         add(panelSuperior, BorderLayout.NORTH);
     }
@@ -166,55 +186,41 @@ public class PanelJugador extends JPanel {
     }
 
     // ==========================================
-    // MÉTODOS DE ESTADO (para el popup)
+    // MÉTODOS DE ESTADO
     // ==========================================
     
     public void sumarDanioComandante(int cantidad, Jugador quienHaceElDanio) {
         if (eliminado) return;
-        
-        // 1. Rastrear el daño por comandante (para la regla de los 21)
         int dañoActual = dañoPorComandante.getOrDefault(quienHaceElDanio, 0);
         dañoPorComandante.put(quienHaceElDanio, dañoActual + cantidad);
-        
-        // 2. ¡NUEVO! También restar las vidas totales
-        cambiarVidas(-cantidad);
+        cambiarVidas(-cantidad); // El daño de comandante también resta vidas totales
         
         System.out.println(jugador.getNombre() + " recibió " + cantidad + 
                           " de daño de comandante de " + quienHaceElDanio.getNombre() + 
-                          ". Total de este comandante: " + (dañoActual + cantidad) +
-                          ". Vidas restantes: " + vidas);
+                          ". Total de este comandante: " + (dañoActual + cantidad));
         
-        // 3. Comprobar derrota por 21 de daño de un mismo comandante
         if ((dañoActual + cantidad) >= 21) {
             JOptionPane.showMessageDialog(this, 
                 "¡" + jugador.getNombre() + " ha recibido 21 o más de daño de comandante de " + 
                 quienHaceElDanio.getNombre() + "!\n\n¡HA PERDIDO LA PARTIDA!", 
-                "¡DERROTA POR COMANDANTE!", 
-                JOptionPane.WARNING_MESSAGE);
+                "¡DERROTA POR COMANDANTE!", JOptionPane.WARNING_MESSAGE);
             eliminarJugador();
         }
     }
     
     public int getTotalDanioComandante() {
         int total = 0;
-        for (int d : dañoPorComandante.values()) {
-            total += d;
-        }
+        for (int d : dañoPorComandante.values()) total += d;
         return total;
     }
     
-    public Map<Jugador, Integer> getDesgloseDanioComandante() {
-        return dañoPorComandante;
-    }
+    public Map<Jugador, Integer> getDesgloseDanioComandante() { return dañoPorComandante; }
     
     public void sumarVeneno() { 
         if (eliminado) return;
         veneno++; 
         if (veneno >= 10) {
-            JOptionPane.showMessageDialog(this, 
-                "¡" + jugador.getNombre() + " ha acumulado 10 contadores de veneno!\n\n¡HA PERDIDO LA PARTIDA!", 
-                "¡DERROTA POR VENENO!", 
-                JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "¡" + jugador.getNombre() + " ha acumulado 10 contadores de veneno!\n\n¡HA PERDIDO LA PARTIDA!", "¡DERROTA POR VENENO!", JOptionPane.WARNING_MESSAGE);
             eliminarJugador();
         }
     }
@@ -224,13 +230,9 @@ public class PanelJugador extends JPanel {
     
     public void toggleMonarca() {
         if (eliminado) return;
-        
         if (!this.esMonarca) {
-            // Desactivar a todos los demás
             for (PanelJugador otroPanel : todosLosPaneles) {
-                if (otroPanel != this) {
-                    otroPanel.desactivarMonarca();
-                }
+                if (otroPanel != this) otroPanel.desactivarMonarca();
             }
             this.esMonarca = true;
             this.lblIndicadorMonarca.setText("👑");
@@ -247,7 +249,6 @@ public class PanelJugador extends JPanel {
         repaint();
     }
     
-    // Getters
     public int getVidas() { return vidas; }
     public int getDanioComandante() { return getTotalDanioComandante(); }
     public int getVeneno() { return veneno; }
@@ -255,7 +256,7 @@ public class PanelJugador extends JPanel {
     public boolean esMonarca() { return esMonarca; }
 
     // ==========================================
-    // MÉTODOS VISUALES
+    // MÉTODOS VISUALES Y LÓGICA DE JUEGO
     // ==========================================
     
     private void cargarImagenFondo(String urlImagen) {
@@ -274,83 +275,114 @@ public class PanelJugador extends JPanel {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         
+        // Dibujar imagen de fondo o color por defecto
         if (imagenFondo != null) {
             g2d.drawImage(imagenFondo, 0, 0, getWidth(), getHeight(), this);
-            // Filtro normal para que el texto resalte
-            g2d.setColor(new Color(0, 0, 0, 100)); 
-            g2d.fillRect(0, 0, getWidth(), getHeight());
         } else {
-            g2d.setColor(new Color(60, 60, 70));
+            // Degradado elegante en lugar de color plano
+            java.awt.GradientPaint gradiente = new java.awt.GradientPaint(
+                0, 0, new Color(40, 40, 50), 
+                0, getHeight(), new Color(20, 20, 30)
+            );
+            g2d.setPaint(gradiente);
             g2d.fillRect(0, 0, getWidth(), getHeight());
         }
         
-        // 🟢 EFECTO "APAGADO": Si está eliminado, añadimos una capa negra semitransparente
+        // Filtro oscuro sutil para que el texto resalte (siempre activo)
+        g2d.setColor(new Color(0, 0, 0, 60));
+        g2d.fillRect(0, 0, getWidth(), getHeight());
+        
+        // 🟢 EFECTO "APAGADO" MEJORADO: Degradado negro semitransparente
         if (eliminado) {
-            // El valor 140 (de 255) hace que se vea oscuro pero aún se distingue la imagen de fondo
-            g2d.setColor(new Color(0, 0, 0, 140)); 
+            java.awt.GradientPaint gradienteApagado = new java.awt.GradientPaint(
+                0, 0, new Color(0, 0, 0, 180), 
+                0, getHeight(), new Color(0, 0, 0, 220)
+            );
+            g2d.setPaint(gradienteApagado);
             g2d.fillRect(0, 0, getWidth(), getHeight());
+            
+            // Añadir un borde rojo sutil para indicar derrota
+            g2d.setColor(new Color(255, 0, 0, 100));
+            g2d.setStroke(new java.awt.BasicStroke(4));
+            g2d.drawRect(2, 2, getWidth() - 4, getHeight() - 4);
         }
     }
 
     private void cambiarVidas(int cantidad) {
-        // Ya no bloqueamos si está eliminado, para permitir subir vidas y "revivir"
         this.vidas += cantidad;
         lblVidas.setText(String.valueOf(this.vidas));
         
-        // Colores según la vida
         if (this.vidas < 20) lblVidas.setForeground(new Color(255, 80, 80));
         else if (this.vidas > 40) lblVidas.setForeground(new Color(100, 255, 100));
         else lblVidas.setForeground(Color.WHITE);
 
-        // 🟢 LÓGICA DE REVIVIR: Si estaba eliminado y ahora tiene más de 0 vidas, vuelve a la partida
-        if (this.eliminado && this.vidas > 0) {
-            this.eliminado = false;
+        // 🟢 LÓGICA DE REVIVIR
+        if (this.eliminado && this.vidas > 0 && !haConcedido) { //Solo revive si ha concedido
+        	this.eliminado = false;
+            ordenDeEliminacion.remove(jugador); // Se quita de la lista de muertos
             
-            // Restaurar botones y colores
-            btnConceder.setText("Conceder");
-            btnConceder.setBackground(new Color(200, 0, 0));
-            btnConceder.setEnabled(true);
-            btnMasVida.setEnabled(true);
-            btnMenosVida.setEnabled(true);
-            
-            System.out.println(jugador.getNombre() + " ha sido revivido!");
+            btnConceder = new JButton("Conceder");
+            btnConceder.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            btnConceder.setBackground(new Color(200, 0, 0, 180)); // Rojo semitransparente
+            btnConceder.setForeground(Color.WHITE);
+            btnConceder.setFocusPainted(false);
+            btnConceder.setBorderPainted(false);
+            btnConceder.setOpaque(true);
+            btnConceder.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         }
 
-        // LÓGICA DE ELIMINACIÓN: Si llega a 0 o menos
+        // 🟢 LÓGICA DE ELIMINACIÓN
         if (this.vidas <= 0) {
-            if (!this.eliminado) { // Solo mostramos el mensaje y eliminamos una vez
+            if (!this.eliminado) { 
+                ordenDeEliminacion.add(jugador); // Se añade a la lista de muertos
+                
                 JOptionPane.showMessageDialog(this, 
                     "¡" + jugador.getNombre() + " ha llegado a 0 vidas!\n\n¡HA PERDIDO LA PARTIDA!", 
-                    "¡DERROTA!", 
-                    JOptionPane.WARNING_MESSAGE);
+                    "¡DERROTA!", JOptionPane.WARNING_MESSAGE);
                 eliminarJugador();
             }
         }
-        
-        repaint(); // Importante para actualizar el efecto visual de "apagado"
+        repaint();
     }
 
     private void confirmarConcesion() {
         if (eliminado) return;
         int opcion = JOptionPane.showConfirmDialog(this,
-                "Seguro que " + jugador.getNombre() + " concede?", 
-                "Confirmar Concesion", JOptionPane.YES_NO_OPTION);
-        if (opcion == JOptionPane.YES_OPTION) eliminarJugador();
+                "¿Seguro que " + jugador.getNombre() + " concede?\n\n¡Esta acción es definitiva y no podrás volver a la partida!", 
+                "Confirmar Concesión", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                
+        if (opcion == JOptionPane.YES_OPTION) {
+            this.haConcedido = true; // 🟢 Activamos la bandera
+            ordenDeEliminacion.add(jugador);
+            eliminarJugador();
+        }
     }
 
     private void eliminarJugador() {
         eliminado = true;
-        
-        // NO deshabilitamos los botones de vida para permitir subir vidas y revivir
-        // btnMasVida.setEnabled(false);  <-- Comentado/Eliminado
-        // btnMenosVida.setEnabled(false); <-- Comentado/Eliminado
-        
-        // Deshabilitamos el botón de conceder, ya que el jugador está fuera
+        // No deshabilitamos los botones de vida para permitir revivir
         btnConceder.setEnabled(false);
         btnConceder.setText("Fuera");
         btnConceder.setBackground(Color.DARK_GRAY);
+        repaint();
+    }
+
+    private void revivirJugador() {
+        eliminado = false;
+        if (this.vidas <= 0) this.vidas = 1; 
         
+        lblVidas.setText(String.valueOf(vidas));
+        lblVidas.setForeground(Color.WHITE);
+        
+        btnMasVida.setEnabled(true);
+        btnMenosVida.setEnabled(true);
+        btnConceder.setText("Conceder");
+        btnConceder.setBackground(new Color(200, 0, 0));
+        btnConceder.setEnabled(true);
+        
+        ordenDeEliminacion.remove(jugador); // Se quita de la lista de muertos
         repaint();
     }
 
@@ -360,7 +392,8 @@ public class PanelJugador extends JPanel {
         this.energia = 0;
         this.esMonarca = false;
         this.eliminado = false;
-        this.dañoPorComandante.clear(); // Resetear el mapa de daño
+        this.dañoPorComandante.clear();
+        this.haConcedido = false;
         
         lblVidas.setText(String.valueOf(vidas));
         lblVidas.setForeground(Color.WHITE);

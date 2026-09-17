@@ -37,5 +37,12 @@
     <version>3.45.3.0</version>
 	</dependency>
 	
+	<!-- FlatLaf: Librería para diseño moderno en Swing -->
+	<dependency>
+    <groupId>com.formdev</groupId>
+    <artifactId>flatlaf</artifactId>
+    <version>3.4.1</version>
+	</dependency>
+	
 </dependencies>	
 </project>
