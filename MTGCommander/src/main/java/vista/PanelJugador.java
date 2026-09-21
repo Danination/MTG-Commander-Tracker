@@ -40,7 +40,8 @@ public class PanelJugador extends JPanel {
         "¿Te rindes? ¡Aún puedes remontar! (O no) 😅",
         "¿Conceder? Los cobardes nunca ganan... 😏",
         "¿Estás seguro? Tu comandante llorará. 😢",
-        "¡Un momento! ¿Y si te dejo vivir 5 minutitos más? "
+        "¡Un momento! ¿Y si te dejo vivir 5 minutitos más? ",
+        "Demasiado por hoy"
     };
     
     // Datos

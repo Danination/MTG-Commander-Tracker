@@ -82,7 +82,8 @@ public class NuevaPartida extends JFrame {
 			"Recuerda: el daño de comandante es acumulativo. 💀",
 			"¡A por esa victoria o a morir en el intento! 🔥",
 			"Que la suerte (y el mana) esté con vosotros. 🌟",
-			"Si tienes Sol Ring en turno 1 pagas la cena 🍻"
+			"Si tienes Sol Ring en turno 1 pagas la cena 🍻",
+			"Sois más malos que pegar a un padre"
 		};
 		String fraseAleatoria = frasesInicio[new Random().nextInt(frasesInicio.length)];
 		
