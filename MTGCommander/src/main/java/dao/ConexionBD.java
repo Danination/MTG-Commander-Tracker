@@ -42,6 +42,9 @@ public class ConexionBD {
             // Crear las tablas si no existen
             crearTablas();
             
+            // 🟢 NUEVO: Migrar tablas existentes para añadir columnas nuevas
+            migrarTablas();
+            
             return conexion;
             
         } catch (SQLException e) {
@@ -53,13 +56,12 @@ public class ConexionBD {
 
     /**
      * Crea las tablas necesarias si no existen.
-     * Usamos "CREATE TABLE IF NOT EXISTS" para no borrar datos existentes.
      */
     private static void crearTablas() {
         try {
             Statement stmt = conexion.createStatement();
             
-            // Tabla de JUGADORES
+            // Tabla de JUGADORES (sin avatar_path, lo añadimos en migrarTablas)
             String sqlJugadores = """
                 CREATE TABLE IF NOT EXISTS jugadores (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,6 +107,29 @@ public class ConexionBD {
     }
 
     /**
+     * 🟢 NUEVO: Método de migración para añadir columnas nuevas a tablas existentes.
+     * Se ejecuta cada vez que se abre la app, pero solo hace cambios si faltan columnas.
+     */
+    private static void migrarTablas() {
+        try {
+            Statement stmt = conexion.createStatement();
+            
+            // Intentamos añadir la columna avatar_path a la tabla jugadores
+            // Si ya existe, SQLite lanzará un error que capturamos e ignoramos
+            try {
+                stmt.execute("ALTER TABLE jugadores ADD COLUMN avatar_path TEXT");
+                System.out.println("✅ Columna 'avatar_path' añadida a la tabla jugadores");
+            } catch (SQLException e) {
+                // La columna ya existe, no hacemos nada
+                System.out.println("ℹ️ La columna 'avatar_path' ya existe en jugadores");
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("❌ Error en la migración de tablas: " + e.getMessage());
+        }
+    }
+
+    /**
      * Cierra la conexión con la base de datos.
      * Se debe llamar al cerrar la aplicación.
      */
@@ -112,7 +137,7 @@ public class ConexionBD {
         try {
             if (conexion != null && !conexion.isClosed()) {
                 conexion.close();
-                System.out.println(" Conexión con la base de datos cerrada.");
+                System.out.println("🔒 Conexión con la base de datos cerrada.");
             }
         } catch (SQLException e) {
             System.err.println("❌ Error al cerrar la conexión: " + e.getMessage());
@@ -129,7 +154,7 @@ public class ConexionBD {
         
         if (conn != null) {
             System.out.println("✅ ¡Conexión exitosa!");
-            System.out.println(" El archivo de base de datos se ha creado en: " + 
+            System.out.println("📁 El archivo de base de datos se ha creado en: " + 
                 java.nio.file.Paths.get("").toAbsolutePath().toString() + "/" + RUTA_BD);
             cerrarConexion();
         } else {

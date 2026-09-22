@@ -16,6 +16,7 @@ public class Jugador {
 	private List<Partida> partidasJugadas;
 	private String comandanteNombre;
 	private String comandanteImagenUrl;
+	private String avatarPath;
 	
 	public Jugador(int id, String nombre, String colorFavorito) {
 		this.id = id;
@@ -112,10 +113,17 @@ public class Jugador {
 	public void setComandanteImagenUrl(String comandanteImagenUrl) {
 		this.comandanteImagenUrl = comandanteImagenUrl;
 	}
+	
+	public String getAvatarPath() {
+		return avatarPath;
+	}
+	
+	public void setAvatarPath(String pathAvatar) {
+		this.avatarPath = avatarPath;
+	}
 
 	@Override
 	public String toString() {
-	    return nombre + " (" + colorFavorito + ")";
-	
+	    return nombre + " (" + colorFavorito + ")";	
 	}		
 }
