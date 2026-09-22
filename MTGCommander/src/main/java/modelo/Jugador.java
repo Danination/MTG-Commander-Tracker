@@ -124,6 +124,6 @@ public class Jugador {
 
 	@Override
 	public String toString() {
-	    return nombre + " (" + colorFavorito + ")";	
+	    return nombre;	
 	}		
 }

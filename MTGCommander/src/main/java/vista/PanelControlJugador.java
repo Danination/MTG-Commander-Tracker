@@ -7,6 +7,7 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Image;
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -18,7 +19,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 
 import modelo.Jugador;
 
@@ -74,21 +74,50 @@ public class PanelControlJugador extends JDialog {
         panelTop.setLayout(new BorderLayout(20, 0));
         panelTop.setOpaque(false);
         
-        // Foto del jugador
+        // Foto del jugador (🟢 AHORA MUESTRA EL AVATAR EN LUGAR DEL COMANDANTE)
         lblFotoGrande = new JLabel();
         lblFotoGrande.setPreferredSize(new Dimension(130, 130));
         lblFotoGrande.setBorder(BorderFactory.createLineBorder(new Color(80, 80, 85), 2));
         lblFotoGrande.setOpaque(true);
         lblFotoGrande.setBackground(new Color(40, 40, 45));
         
-        String urlImagen = jugador.getComandanteImagenUrl();
-        if (urlImagen != null && !urlImagen.isEmpty()) {
-            try {
-                java.net.URL url = new java.net.URL(urlImagen);
-                Image img = javax.imageio.ImageIO.read(url);
-                ImageIcon icon = new ImageIcon(img.getScaledInstance(130, 130, Image.SCALE_SMOOTH));
-                lblFotoGrande.setIcon(icon);
-            } catch (Exception e) {
+        // cargar el avatar del jugador
+        String avatarPath = jugador.getAvatarPath();
+        boolean avatarCargado = false;
+        
+        if (avatarPath != null && !avatarPath.isEmpty()) {
+            File archivoAvatar = new File(avatarPath);
+            if (archivoAvatar.exists()) {
+                try {
+                    Image imgAvatar = javax.imageio.ImageIO.read(archivoAvatar);
+                    ImageIcon iconAvatar = new ImageIcon(imgAvatar.getScaledInstance(130, 130, Image.SCALE_SMOOTH));
+                    lblFotoGrande.setIcon(iconAvatar);
+                    lblFotoGrande.setToolTipText("Avatar de " + jugador.getNombre());
+                    avatarCargado = true;
+                    System.out.println("✅ Avatar cargado en popup para " + jugador.getNombre());
+                } catch (Exception e) {
+                    System.err.println("❌ Error al cargar avatar en popup: " + e.getMessage());
+                }
+            }
+        }
+        
+        // Si no hay avatar, usar la imagen del comandante como fallback
+        if (!avatarCargado) {
+            String urlImagen = jugador.getComandanteImagenUrl();
+            if (urlImagen != null && !urlImagen.isEmpty()) {
+                try {
+                    java.net.URL url = new java.net.URL(urlImagen);
+                    Image img = javax.imageio.ImageIO.read(url);
+                    ImageIcon icon = new ImageIcon(img.getScaledInstance(130, 130, Image.SCALE_SMOOTH));
+                    lblFotoGrande.setIcon(icon);
+                    lblFotoGrande.setToolTipText("Comandante: " + (jugador.getComandanteNombre() != null ? jugador.getComandanteNombre() : "Sin asignar"));
+                } catch (Exception e) {
+                    lblFotoGrande.setText("?");
+                    lblFotoGrande.setFont(new Font("Segoe UI", Font.BOLD, 40));
+                    lblFotoGrande.setForeground(Color.WHITE);
+                    lblFotoGrande.setHorizontalAlignment(SwingConstants.CENTER);
+                }
+            } else {
                 lblFotoGrande.setText("?");
                 lblFotoGrande.setFont(new Font("Segoe UI", Font.BOLD, 40));
                 lblFotoGrande.setForeground(Color.WHITE);
