@@ -115,12 +115,12 @@ public class Jugador {
 	}
 	
 	public String getAvatarPath() {
-		return avatarPath;
-	}
-	
-	public void setAvatarPath(String pathAvatar) {
-		this.avatarPath = avatarPath;
-	}
+        return avatarPath;
+    }
+    
+    public void setAvatarPath(String avatarPath) {
+        this.avatarPath = avatarPath;
+    }
 
 	@Override
 	public String toString() {

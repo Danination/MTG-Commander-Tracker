@@ -14,6 +14,7 @@ import java.io.File;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -40,7 +41,7 @@ public class FormularioJugador extends JFrame {
     
     private Jugador jugadorAEditar;
     private DefaultListModel<Jugador> modeloRecibido;
-    private String rutaAvatarTemporal; // Para guardar la ruta temporalmente
+    private String rutaAvatarTemporal;
 
     public static void main(String[] args) {
         EventQueue.invokeLater(new Runnable() {
@@ -61,70 +62,79 @@ public class FormularioJugador extends JFrame {
         
         setTitle(jugadorAEditar == null ? "Nuevo Jugador" : "Editar Jugador");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setSize(450, 400); // Tamaño más adecuado
-        setLocationRelativeTo(null); // Centrado en pantalla
+        setSize(420, 450); 
+        setLocationRelativeTo(null); 
+        setResizable(false); // Evita que el usuario deforme la ventana
         
         contentPane = new JPanel();
-        contentPane.setBorder(new EmptyBorder(25, 25, 25, 25));
+        contentPane.setBorder(new EmptyBorder(30, 30, 30, 30));
         setContentPane(contentPane);
-        contentPane.setLayout(new BorderLayout(15, 15));
+        contentPane.setLayout(new BorderLayout(20, 20));
         
         // ==========================================
-        // 1. ZONA NORTE: Título
+        // 1. ZONA NORTE: Título limpio (Sin emojis que fallan)
         // ==========================================
         JLabel lblTitulo = new JLabel(
-            jugadorAEditar == null ? "➕ Añadir Jugador" : "✏️ Editar Jugador",
+            jugadorAEditar == null ? "Añadir Jugador" : "Editar Jugador",
             SwingConstants.CENTER
         );
-        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        lblTitulo.setForeground(new Color(255, 215, 0)); // Dorado
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblTitulo.setForeground(new Color(255, 255, 255)); // Blanco puro para mejor contraste
         contentPane.add(lblTitulo, BorderLayout.NORTH);
         
         // ==========================================
         // 2. ZONA CENTRO: Formulario
         // ==========================================
-        JPanel panelFormulario = new JPanel();
-        panelFormulario.setLayout(new GridLayout(0, 1, 15, 15));
-        panelFormulario.setBorder(new EmptyBorder(10, 0, 10, 0));
+        JPanel panelCentral = new JPanel();
+        panelCentral.setLayout(new GridLayout(0, 1, 20, 0)); // Espacio vertical entre elementos
+        panelCentral.setOpaque(false);
         
-        // Campo Nombre
-        JPanel panelNombre = new JPanel(new BorderLayout(10, 0));
+        // --- Campo Nombre ---
+        JPanel panelNombre = new JPanel(new BorderLayout(0, 8));
         panelNombre.setOpaque(false);
-        JLabel lblNombre = new JLabel("Nombre del jugador:");
-        lblNombre.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        JLabel lblNombre = new JLabel("Nombre del jugador");
+        lblNombre.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblNombre.setForeground(new Color(180, 180, 180)); // Gris claro elegante
         panelNombre.add(lblNombre, BorderLayout.NORTH);
         
         txtNombre = new JTextField();
         txtNombre.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        txtNombre.setPreferredSize(new Dimension(0, 40));
+        txtNombre.setPreferredSize(new Dimension(0, 45));
+        // FlatLaf maneja bien los bordes, pero aseguramos un estilo limpio
         panelNombre.add(txtNombre, BorderLayout.CENTER);
-        contentPane.add(panelNombre, BorderLayout.CENTER);
+        panelCentral.add(panelNombre);
         
-        // Panel del Avatar
-        JPanel panelAvatar = new JPanel(new BorderLayout(15, 10));
+        // --- Panel del Avatar (Rediseñado para no deformarse) ---
+        JPanel panelAvatar = new JPanel(new BorderLayout(0, 10));
         panelAvatar.setOpaque(false);
-        panelAvatar.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(new Color(70, 70, 75)),
-            "Foto de perfil (Avatar)",
-            javax.swing.border.TitledBorder.LEFT,
-            javax.swing.border.TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 13),
-            Color.GRAY
-        ));
         
-        lblPreviewAvatar = new JLabel("Sin imagen", SwingConstants.CENTER);
-        lblPreviewAvatar.setPreferredSize(new Dimension(150, 150));
-        lblPreviewAvatar.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
+        JLabel lblAvatarTitulo = new JLabel("Foto de perfil (Avatar)");
+        lblAvatarTitulo.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblAvatarTitulo.setForeground(new Color(180, 180, 180));
+        lblAvatarTitulo.setHorizontalAlignment(SwingConstants.CENTER);
+        panelAvatar.add(lblAvatarTitulo, BorderLayout.NORTH);
+        
+        // Contenedor para centrar la imagen
+        JPanel panelImagenContainer = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        panelImagenContainer.setOpaque(false);
+        
+        lblPreviewAvatar = new JLabel("Sin imagen");
+        lblPreviewAvatar.setPreferredSize(new Dimension(120, 120)); // Cuadrado perfecto
+        lblPreviewAvatar.setBorder(BorderFactory.createLineBorder(new Color(60, 60, 65), 2));
         lblPreviewAvatar.setOpaque(true);
         lblPreviewAvatar.setBackground(new Color(30, 30, 35));
-        lblPreviewAvatar.setForeground(Color.WHITE);
-        lblPreviewAvatar.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        panelAvatar.add(lblPreviewAvatar, BorderLayout.CENTER);
+        lblPreviewAvatar.setForeground(new Color(100, 100, 100));
+        lblPreviewAvatar.setHorizontalAlignment(SwingConstants.CENTER);
+        lblPreviewAvatar.setVerticalAlignment(SwingConstants.CENTER);
+        lblPreviewAvatar.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        panelImagenContainer.add(lblPreviewAvatar);
+        panelAvatar.add(panelImagenContainer, BorderLayout.CENTER);
         
-        btnCambiarAvatar = new JButton("📷 Seleccionar Foto");
-        btnCambiarAvatar.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnCambiarAvatar.setPreferredSize(new Dimension(0, 40));
-        btnCambiarAvatar.setBackground(new Color(60, 60, 65));
+        btnCambiarAvatar = new JButton("Seleccionar Foto");
+        btnCambiarAvatar.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnCambiarAvatar.setPreferredSize(new Dimension(0, 35));
+        btnCambiarAvatar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35)); // Se adapta al ancho
+        btnCambiarAvatar.setBackground(new Color(50, 50, 55));
         btnCambiarAvatar.setForeground(Color.WHITE);
         btnCambiarAvatar.setFocusPainted(false);
         btnCambiarAvatar.setBorderPainted(false);
@@ -132,20 +142,20 @@ public class FormularioJugador extends JFrame {
         btnCambiarAvatar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         panelAvatar.add(btnCambiarAvatar, BorderLayout.SOUTH);
         
-        panelFormulario.add(panelNombre);
-        panelFormulario.add(panelAvatar);
-        contentPane.add(panelFormulario, BorderLayout.CENTER);
+        panelCentral.add(panelAvatar);
+        contentPane.add(panelCentral, BorderLayout.CENTER);
         
         // ==========================================
-        // 3. ZONA SUR: Botones de Acción
+        // 3. ZONA SUR: Botones de Acción (Colores más sobrios)
         // ==========================================
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
         panelBotones.setOpaque(false);
         
-        btnGuardar = new JButton(jugadorAEditar == null ? "💾 Guardar" : "💾 Actualizar");
-        btnGuardar.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        btnGuardar.setPreferredSize(new Dimension(150, 45));
-        btnGuardar.setBackground(new Color(0, 150, 0)); // Verde
+        btnGuardar = new JButton(jugadorAEditar == null ? "Guardar" : "Actualizar");
+        btnGuardar.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnGuardar.setPreferredSize(new Dimension(140, 40));
+        // Color azul elegante en lugar de verde chillón
+        btnGuardar.setBackground(new Color(0, 120, 215)); 
         btnGuardar.setForeground(Color.WHITE);
         btnGuardar.setFocusPainted(false);
         btnGuardar.setBorderPainted(false);
@@ -153,10 +163,11 @@ public class FormularioJugador extends JFrame {
         btnGuardar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         panelBotones.add(btnGuardar);
         
-        btnCancelar = new JButton("❌ Cancelar");
-        btnCancelar.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        btnCancelar.setPreferredSize(new Dimension(150, 45));
-        btnCancelar.setBackground(new Color(150, 0, 0)); // Rojo
+        btnCancelar = new JButton("Cancelar");
+        btnCancelar.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnCancelar.setPreferredSize(new Dimension(140, 40));
+        // Color gris oscuro en lugar de rojo chillón
+        btnCancelar.setBackground(new Color(60, 60, 65)); 
         btnCancelar.setForeground(Color.WHITE);
         btnCancelar.setFocusPainted(false);
         btnCancelar.setBorderPainted(false);
@@ -180,45 +191,27 @@ public class FormularioJugador extends JFrame {
         // 5. LÓGICA DE LOS BOTONES
         // ==========================================
         
-        // Botón Cancelar
-        btnCancelar.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                dispose();
-            }
-        });
+        btnCancelar.addActionListener(e -> dispose());
+        btnCambiarAvatar.addActionListener(e -> seleccionarAvatar());
 
-        // Botón Cambiar Avatar
-        btnCambiarAvatar.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                seleccionarAvatar();
-            }
-        });
-
-        // Botón Guardar / Actualizar
         btnGuardar.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 String nombre = txtNombre.getText().trim();
                 
                 if (!nombre.isEmpty()) {
                     if (jugadorAEditar != null) {
-                        // MODO EDICIÓN
                         jugadorAEditar.setNombre(nombre);
-                        if (rutaAvatarTemporal != null) {
+                        if (rutaAvatarTemporal != null && !rutaAvatarTemporal.isEmpty()) {
                             jugadorAEditar.setAvatarPath(rutaAvatarTemporal);
                         }
-                        
                         GestorBD.guardarJugador(jugadorAEditar);
-                        
                         int indice = modeloRecibido.indexOf(jugadorAEditar);
-                        modeloRecibido.setElementAt(jugadorAEditar, indice);
-                        
+                        if (indice >= 0) modeloRecibido.setElementAt(jugadorAEditar, indice);
                     } else {
-                        // MODO CREACIÓN
-                        Jugador nuevoJugador = new Jugador(0, nombre, ""); // Color vacío
-                        if (rutaAvatarTemporal != null) {
+                        Jugador nuevoJugador = new Jugador(0, nombre, "");
+                        if (rutaAvatarTemporal != null && !rutaAvatarTemporal.isEmpty()) {
                             nuevoJugador.setAvatarPath(rutaAvatarTemporal);
                         }
-                        
                         GestorBD.guardarJugador(nuevoJugador);
                         modeloRecibido.addElement(nuevoJugador);
                     }
@@ -230,10 +223,6 @@ public class FormularioJugador extends JFrame {
         });
     }
     
-    // ==========================================
-    // MÉTODOS AUXILIARES
-    // ==========================================
-    
     private void seleccionarAvatar() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Seleccionar foto de perfil");
@@ -242,28 +231,20 @@ public class FormularioJugador extends JFrame {
         int result = fileChooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             File archivoSeleccionado = fileChooser.getSelectedFile();
-            
             try {
-                // 1. Crear carpeta 'avatars' si no existe
                 File carpetaAvatars = new File("avatars");
-                if (!carpetaAvatars.exists()) {
-                    carpetaAvatars.mkdir();
-                }
+                if (!carpetaAvatars.exists()) carpetaAvatars.mkdir();
                 
-                // 2. Definir el nombre del archivo
                 String nombreJugador = txtNombre.getText().trim().isEmpty() ? "jugador" : txtNombre.getText().trim();
                 String extension = archivoSeleccionado.getName().substring(archivoSeleccionado.getName().lastIndexOf("."));
+                // Usamos timestamp para evitar sobrescribir si se cambia la foto
                 String nombreArchivo = nombreJugador.replace(" ", "_") + "_" + System.currentTimeMillis() + extension;
                 
-                // 3. Copiar el archivo a la carpeta avatars
                 java.nio.file.Path origen = archivoSeleccionado.toPath();
                 java.nio.file.Path destino = java.nio.file.Paths.get("avatars", nombreArchivo);
                 java.nio.file.Files.copy(origen, destino, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                 
-                // 4. Guardar la ruta relativa
                 rutaAvatarTemporal = "avatars/" + nombreArchivo;
-                
-                // 5. Mostrar la miniatura
                 cargarMiniaturaAvatar(rutaAvatarTemporal);
                 
             } catch (Exception ex) {
@@ -277,13 +258,14 @@ public class FormularioJugador extends JFrame {
             File archivo = new File(ruta);
             if (archivo.exists()) {
                 Image img = javax.imageio.ImageIO.read(archivo);
-                javax.swing.ImageIcon icon = new javax.swing.ImageIcon(img.getScaledInstance(150, 150, Image.SCALE_SMOOTH));
+                // Escalamos manteniendo proporción dentro de 120x120
+                ImageIcon icon = new ImageIcon(img.getScaledInstance(120, 120, Image.SCALE_SMOOTH));
                 lblPreviewAvatar.setIcon(icon);
-                lblPreviewAvatar.setText("");
-                lblPreviewAvatar.setBorder(BorderFactory.createLineBorder(new Color(0, 150, 0), 2)); // Borde verde
+                lblPreviewAvatar.setText(""); // Quitar texto
+                lblPreviewAvatar.setBorder(BorderFactory.createLineBorder(new Color(0, 120, 215), 2)); // Borde azul
             }
         } catch (Exception e) {
-            lblPreviewAvatar.setText("Error al cargar");
+            lblPreviewAvatar.setText("Error");
         }
     }
 }

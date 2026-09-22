@@ -7,8 +7,6 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Image;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.Map;
 
@@ -41,34 +39,23 @@ public class PanelControlJugador extends JDialog {
     private JLabel lblFotoGrande;
 
     public PanelControlJugador(PanelJugador panelJugador, Jugador jugador, List<Jugador> todosLosJugadores) {
-        
         this.panelJugador = panelJugador;
         this.jugador = jugador;
         this.todosLosJugadores = todosLosJugadores;
         
         setTitle("Control de " + jugador.getNombre());
-        setSize(550, 650); // Un poco más ancho y alto
+        setSize(500, 600);
         setLocationRelativeTo(panelJugador);
+        setResizable(false);
         
         // Usamos un JTabbedPane para organizar la información
         JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        tabbedPane.addTab("👤 Jugador", crearPestanaJugador());
-        tabbedPane.addTab("🎲 Contadores", crearPestanaContadores());
+        tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        tabbedPane.addTab("Jugador", crearPestanaJugador());
+        tabbedPane.addTab("Contadores", crearPestanaContadores());
         
-        setLayout(new BorderLayout(10, 10));
+        setLayout(new BorderLayout(0, 0));
         add(tabbedPane, BorderLayout.CENTER);
-        
-        // Botón de cerrar abajo del todo
-        JPanel panelSur = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 15));
-        panelSur.setOpaque(false);
-        JButton btnCerrar = new JButton("Cerrar Panel");
-        btnCerrar.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        btnCerrar.setPreferredSize(new Dimension(200, 45));
-        btnCerrar.addActionListener(e -> dispose());
-        panelSur.add(btnCerrar);
-        
-        add(panelSur, BorderLayout.SOUTH);
         
         actualizarValores();
     }
@@ -77,26 +64,29 @@ public class PanelControlJugador extends JDialog {
     // PESTAÑA 1: JUGADOR (Vida, Daño Cmdte, Monarca)
     // ==========================================
     private JPanel crearPestanaJugador() {
-        JPanel panel = new JPanel(new BorderLayout(10, 15));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        JPanel panel = new JPanel();
+        panel.setLayout(new BorderLayout(0, 0));
+        panel.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
         panel.setOpaque(false);
 
-        // 1. Zona Superior: Foto + Vida
-        JPanel panelTop = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        // 1. Zona Superior: Foto + Vida + Nombre
+        JPanel panelTop = new JPanel();
+        panelTop.setLayout(new BorderLayout(20, 0));
         panelTop.setOpaque(false);
         
+        // Foto del jugador
         lblFotoGrande = new JLabel();
-        lblFotoGrande.setPreferredSize(new Dimension(150, 150));
-        lblFotoGrande.setBorder(BorderFactory.createLineBorder(new Color(255, 215, 0), 3)); // Borde dorado
+        lblFotoGrande.setPreferredSize(new Dimension(130, 130));
+        lblFotoGrande.setBorder(BorderFactory.createLineBorder(new Color(80, 80, 85), 2));
         lblFotoGrande.setOpaque(true);
-        lblFotoGrande.setBackground(new Color(30, 30, 35));
+        lblFotoGrande.setBackground(new Color(40, 40, 45));
         
         String urlImagen = jugador.getComandanteImagenUrl();
         if (urlImagen != null && !urlImagen.isEmpty()) {
             try {
                 java.net.URL url = new java.net.URL(urlImagen);
                 Image img = javax.imageio.ImageIO.read(url);
-                ImageIcon icon = new ImageIcon(img.getScaledInstance(150, 150, Image.SCALE_SMOOTH));
+                ImageIcon icon = new ImageIcon(img.getScaledInstance(130, 130, Image.SCALE_SMOOTH));
                 lblFotoGrande.setIcon(icon);
             } catch (Exception e) {
                 lblFotoGrande.setText("?");
@@ -105,41 +95,67 @@ public class PanelControlJugador extends JDialog {
                 lblFotoGrande.setHorizontalAlignment(SwingConstants.CENTER);
             }
         }
-        panelTop.add(lblFotoGrande);
+        panelTop.add(lblFotoGrande, BorderLayout.WEST);
         
-        JPanel panelVida = new JPanel(new GridLayout(2, 1, 0, 5));
-        panelVida.setOpaque(false);
-        JLabel lblNombreGrande = new JLabel(jugador.getNombre(), SwingConstants.CENTER);
-        lblNombreGrande.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        // Panel de nombre y vida
+        JPanel panelInfo = new JPanel();
+        panelInfo.setLayout(new GridLayout(2, 1, 0, 10));
+        panelInfo.setOpaque(false);
+        
+        JLabel lblNombreGrande = new JLabel(jugador.getNombre(), SwingConstants.LEFT);
+        lblNombreGrande.setFont(new Font("Segoe UI", Font.BOLD, 26));
         lblNombreGrande.setForeground(Color.WHITE);
         
-        lblVidasGrande = new JLabel("40", SwingConstants.CENTER);
-        lblVidasGrande.setFont(new Font("Segoe UI", Font.BOLD, 64));
-        lblVidasGrande.setForeground(new Color(100, 255, 100)); // Verde neón
+        lblVidasGrande = new JLabel("40", SwingConstants.LEFT);
+        lblVidasGrande.setFont(new Font("Segoe UI", Font.BOLD, 56));
+        lblVidasGrande.setForeground(new Color(100, 255, 100));
         
-        panelVida.add(lblNombreGrande);
-        panelVida.add(lblVidasGrande);
-        panelTop.add(panelVida);
+        panelInfo.add(lblNombreGrande);
+        panelInfo.add(lblVidasGrande);
+        panelTop.add(panelInfo, BorderLayout.CENTER);
+        
         panel.add(panelTop, BorderLayout.NORTH);
 
+        // Separador sutil
+        JPanel separador = new JPanel();
+        separador.setPreferredSize(new Dimension(0, 1));
+        separador.setBackground(new Color(60, 60, 65));
+        separador.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
+        panel.add(separador, BorderLayout.CENTER);
+
         // 2. Zona Centro: Daño de Comandante
-        JPanel panelCmdte = new JPanel(new BorderLayout(0, 10));
+        JPanel panelCmdte = new JPanel(new BorderLayout(0, 15));
         panelCmdte.setOpaque(false);
         
-        lblDesgloseCmdte = new JLabel("Daño de Comandante: 0", SwingConstants.CENTER);
-        lblDesgloseCmdte.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        lblDesgloseCmdte.setForeground(new Color(200, 100, 100)); // Rojo suave
-        panelCmdte.add(lblDesgloseCmdte, BorderLayout.NORTH);
+        JLabel lblTituloCmdte = new JLabel("Daño de Comandante", SwingConstants.CENTER);
+        lblTituloCmdte.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        lblTituloCmdte.setForeground(new Color(200, 100, 100));
+        panelCmdte.add(lblTituloCmdte, BorderLayout.NORTH);
         
-        JPanel gridBotonesCmdte = new JPanel(new GridLayout(0, 2, 10, 10)); // 2 columnas
+        lblDesgloseCmdte = new JLabel("0", SwingConstants.CENTER);
+        lblDesgloseCmdte.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        lblDesgloseCmdte.setForeground(new Color(180, 180, 180));
+        panelCmdte.add(lblDesgloseCmdte, BorderLayout.CENTER);
+        
+        // Grid de botones de daño (más compacto)
+        int numRivales = todosLosJugadores.size() - 1;
+        int columnas = 2;
+        int filas = (numRivales + columnas - 1) / columnas;
+        
+        JPanel gridBotonesCmdte = new JPanel(new GridLayout(filas, columnas, 10, 10));
         gridBotonesCmdte.setOpaque(false);
         
         for (Jugador otroJugador : todosLosJugadores) {
             if (!otroJugador.equals(jugador)) {
-                JButton btn = new JButton("⚔️ " + otroJugador.getNombre());
-                btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+                JButton btn = new JButton(otroJugador.getNombre());
+                btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+                btn.setBackground(new Color(50, 50, 55));
+                btn.setForeground(Color.WHITE);
                 btn.setFocusPainted(false);
+                btn.setBorderPainted(false);
+                btn.setOpaque(true);
                 btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+                btn.setPreferredSize(new Dimension(0, 40));
                 btn.addActionListener(e -> {
                     panelJugador.sumarDanioComandante(1, otroJugador);
                     actualizarValores();
@@ -147,28 +163,34 @@ public class PanelControlJugador extends JDialog {
                 gridBotonesCmdte.add(btn);
             }
         }
-        panelCmdte.add(gridBotonesCmdte, BorderLayout.CENTER);
+        panelCmdte.add(gridBotonesCmdte, BorderLayout.SOUTH);
         panel.add(panelCmdte, BorderLayout.CENTER);
 
         // 3. Zona Sur: Monarca
-        JPanel panelMonarca = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 10));
+        JPanel panelMonarca = new JPanel();
+        panelMonarca.setLayout(new BorderLayout(0, 10));
         panelMonarca.setOpaque(false);
+        panelMonarca.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
         
-        lblEstadoMonarca = new JLabel("NO ERES EL MONARCA");
-        lblEstadoMonarca.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        lblEstadoMonarca = new JLabel("No eres el Monarca", SwingConstants.CENTER);
+        lblEstadoMonarca.setFont(new Font("Segoe UI", Font.BOLD, 15));
         lblEstadoMonarca.setForeground(Color.GRAY);
-        panelMonarca.add(lblEstadoMonarca);
+        panelMonarca.add(lblEstadoMonarca, BorderLayout.NORTH);
         
-        JButton btnMonarca = new JButton("👑 Reclamar / Ceder Monarca");
+        JButton btnMonarca = new JButton("Reclamar / Ceder Monarca");
         btnMonarca.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnMonarca.setPreferredSize(new Dimension(250, 40));
+        btnMonarca.setBackground(new Color(60, 60, 65));
+        btnMonarca.setForeground(Color.WHITE);
         btnMonarca.setFocusPainted(false);
+        btnMonarca.setBorderPainted(false);
+        btnMonarca.setOpaque(true);
         btnMonarca.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnMonarca.setPreferredSize(new Dimension(0, 45));
         btnMonarca.addActionListener(e -> {
             panelJugador.toggleMonarca();
             actualizarValores();
         });
-        panelMonarca.add(btnMonarca);
+        panelMonarca.add(btnMonarca, BorderLayout.CENTER);
         
         panel.add(panelMonarca, BorderLayout.SOUTH);
         
@@ -179,13 +201,13 @@ public class PanelControlJugador extends JDialog {
     // PESTAÑA 2: CONTADORES (Veneno, Energía)
     // ==========================================
     private JPanel crearPestanaContadores() {
-        JPanel panel = new JPanel(new GridLayout(2, 1, 15, 15));
-        panel.setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
+        JPanel panel = new JPanel(new GridLayout(2, 1, 0, 20));
+        panel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         panel.setOpaque(false);
         
         panel.add(crearTarjetaContador(
-            "☠️ VENENO", 
-            new Color(138, 43, 226), // Morado
+            "VENENO", 
+            new Color(138, 43, 226),
             () -> panelJugador.getVeneno(),
             () -> panelJugador.restarVeneno(),
             () -> panelJugador.sumarVeneno(),
@@ -193,8 +215,8 @@ public class PanelControlJugador extends JDialog {
         ));
         
         panel.add(crearTarjetaContador(
-            "⚡ ENERGÍA", 
-            new Color(0, 191, 255), // Azul cian
+            "ENERGÍA", 
+            new Color(0, 191, 255),
             () -> panelJugador.getEnergia(),
             () -> panelJugador.restarEnergia(),
             () -> panelJugador.sumarEnergia(),
@@ -204,43 +226,42 @@ public class PanelControlJugador extends JDialog {
         return panel;
     }
 
-    // Método auxiliar para crear tarjetas de contadores bonitas
     private JPanel crearTarjetaContador(String titulo, Color colorAcento, 
                                         java.util.function.IntSupplier getValor,
                                         Runnable restar, Runnable sumar, 
                                         java.util.function.IntConsumer actualizarLabel) {
         
-        JPanel tarjeta = new JPanel(new BorderLayout(10, 10));
+        JPanel tarjeta = new JPanel(new BorderLayout(0, 15));
         tarjeta.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(colorAcento, 2),
-            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
-        tarjeta.setBackground(new Color(40, 40, 45));
+        tarjeta.setBackground(new Color(45, 45, 50));
         
-        // Título
         JLabel lblTitulo = new JLabel(titulo, SwingConstants.CENTER);
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblTitulo.setForeground(colorAcento);
         tarjeta.add(lblTitulo, BorderLayout.NORTH);
         
-        // Valor central
         JLabel lblValor = new JLabel(String.valueOf(getValor.getAsInt()), SwingConstants.CENTER);
         lblValor.setFont(new Font("Segoe UI", Font.BOLD, 56));
         lblValor.setForeground(Color.WHITE);
         tarjeta.add(lblValor, BorderLayout.CENTER);
         
-        // Guardamos la referencia para actualizarla después
-        if (titulo.contains("VENENO")) lblValorVeneno = lblValor;
-        else if (titulo.contains("ENERGÍA")) lblValorEnergia = lblValor;
+        if (titulo.equals("VENENO")) lblValorVeneno = lblValor;
+        else if (titulo.equals("ENERGÍA")) lblValorEnergia = lblValor;
         
-        // Botones + y -
-        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 30, 0));
         panelBotones.setOpaque(false);
         
-        JButton btnMenos = new JButton("−");
+        JButton btnMenos = new JButton("-");
         btnMenos.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        btnMenos.setPreferredSize(new Dimension(60, 40));
+        btnMenos.setPreferredSize(new Dimension(70, 45));
+        btnMenos.setBackground(new Color(60, 60, 65));
+        btnMenos.setForeground(Color.WHITE);
         btnMenos.setFocusPainted(false);
+        btnMenos.setBorderPainted(false);
+        btnMenos.setOpaque(true);
         btnMenos.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnMenos.addActionListener(e -> {
             restar.run();
@@ -249,8 +270,12 @@ public class PanelControlJugador extends JDialog {
         
         JButton btnMas = new JButton("+");
         btnMas.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        btnMas.setPreferredSize(new Dimension(60, 40));
+        btnMas.setPreferredSize(new Dimension(70, 45));
+        btnMas.setBackground(new Color(60, 60, 65));
+        btnMas.setForeground(Color.WHITE);
         btnMas.setFocusPainted(false);
+        btnMas.setBorderPainted(false);
+        btnMas.setOpaque(true);
         btnMas.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnMas.addActionListener(e -> {
             sumar.run();
@@ -264,27 +289,20 @@ public class PanelControlJugador extends JDialog {
         return tarjeta;
     }
 
-    // ==========================================
-    // ACTUALIZACIÓN DE VALORES
-    // ==========================================
     private void actualizarValores() {
         if (lblVidasGrande != null) lblVidasGrande.setText(String.valueOf(panelJugador.getVidas()));
         
         if (lblDesgloseCmdte != null) {
             Map<Jugador, Integer> desglose = panelJugador.getDesgloseDanioComandante();
             if (desglose.isEmpty()) {
-                lblDesgloseCmdte.setText("Daño de Comandante: 0");
+                lblDesgloseCmdte.setText("0");
             } else {
-                StringBuilder texto = new StringBuilder("Daño Cmdte: ");
+                StringBuilder texto = new StringBuilder();
                 for (Map.Entry<Jugador, Integer> entry : desglose.entrySet()) {
-                    texto.append(entry.getKey().getNombre()).append(": ")
-                         .append(entry.getValue()).append(" | ");
+                    if (texto.length() > 0) texto.append(" | ");
+                    texto.append(entry.getKey().getNombre()).append(": ").append(entry.getValue());
                 }
-                String textoFinal = texto.toString();
-                if (textoFinal.endsWith("| ")) {
-                    textoFinal = textoFinal.substring(0, textoFinal.length() - 2);
-                }
-                lblDesgloseCmdte.setText(textoFinal);
+                lblDesgloseCmdte.setText(texto.toString());
             }
         }
         
@@ -293,10 +311,10 @@ public class PanelControlJugador extends JDialog {
         
         if (lblEstadoMonarca != null) {
             if (panelJugador.esMonarca()) {
-                lblEstadoMonarca.setText("¡ERES EL MONARCA!");
-                lblEstadoMonarca.setForeground(new Color(255, 215, 0)); // Dorado
+                lblEstadoMonarca.setText("¡Eres el Monarca!");
+                lblEstadoMonarca.setForeground(new Color(255, 215, 0));
             } else {
-                lblEstadoMonarca.setText("NO ERES EL MONARCA");
+                lblEstadoMonarca.setText("No eres el Monarca");
                 lblEstadoMonarca.setForeground(Color.GRAY);
             }
         }
