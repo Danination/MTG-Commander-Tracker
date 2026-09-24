@@ -1,25 +1,36 @@
 package vista;
 
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GradientPaint;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.SwingConstants;
+import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
+
+import com.formdev.flatlaf.FlatDarkLaf;
 
 import dao.GestorBD;
 
@@ -30,10 +41,16 @@ public class Ranking extends JFrame {
     private JTable tablaRanking;
     private DefaultTableModel modeloTabla;
 
+    // Colores rojo sangre
+    private static final Color COLOR_SANGRE = new Color(139, 26, 26);
+    private static final Color COLOR_SANGRE_CLARO = new Color(165, 42, 42);
+    private static final Color COLOR_SANGRE_OSCURO = new Color(74, 14, 14);
+
     public static void main(String[] args) {
         EventQueue.invokeLater(new Runnable() {
             public void run() {
                 try {
+                    FlatDarkLaf.setup();
                     Ranking frame = new Ranking();
                     frame.setVisible(true);
                 } catch (Exception e) {
@@ -44,30 +61,83 @@ public class Ranking extends JFrame {
     }
 
     public Ranking() {
-        setTitle("🏆 Ranking de Jugadores");
+        try {
+            UIManager.setLookAndFeel(new FlatDarkLaf());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        setTitle("Ranking de Jugadores");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setBounds(100, 100, 950, 550); // 🟢 MEJORA: Un poco más ancho para que quepa todo holgadamente
+        setSize(950, 600);
+        setLocationRelativeTo(null);
+        setResizable(false);
         
         contentPane = new JPanel();
-        contentPane.setBorder(new EmptyBorder(20, 20, 20, 20));
+        contentPane.setBorder(new EmptyBorder(40, 40, 40, 40));
         setContentPane(contentPane);
-        contentPane.setLayout(new BorderLayout(15, 15));
+        contentPane.setLayout(new BorderLayout(0, 25));
 
         // ==========================================
-        // 1. ZONA NORTE: Título decorativo
+        // 1. ZONA NORTE: Título en Rojo Sangre
         // ==========================================
-        JPanel panelTitulo = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        panelTitulo.setOpaque(false);
-        JLabel lblTitulo = new JLabel(" --> SALÓN DE LA FAMA <--");
-        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        lblTitulo.setForeground(new Color(255, 215, 0)); // Dorado
-        panelTitulo.add(lblTitulo);
-        contentPane.add(panelTitulo, BorderLayout.NORTH);
+        JPanel panelNorte = new JPanel();
+        panelNorte.setLayout(new BorderLayout(0, 10));
+        panelNorte.setOpaque(false);
+        panelNorte.setBorder(new EmptyBorder(0, 0, 20, 0));
+        
+        JPanel panelTituloContainer = new JPanel();
+        panelTituloContainer.setLayout(new BorderLayout());
+        panelTituloContainer.setOpaque(false);
+        
+        JLabel lblTitulo = new JLabel("RANKING DE JUGADORES", SwingConstants.CENTER);
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 36));
+        lblTitulo.setForeground(COLOR_SANGRE);
+        panelTituloContainer.add(lblTitulo, BorderLayout.CENTER);
+        
+        JPanel lineaDecorativa = new JPanel();
+        lineaDecorativa.setPreferredSize(new Dimension(0, 3));
+        lineaDecorativa.setBackground(new Color(150, 35, 35));
+        panelTituloContainer.add(lineaDecorativa, BorderLayout.SOUTH);
+        
+        panelNorte.add(panelTituloContainer, BorderLayout.CENTER);
+        
+        JLabel lblSubtitulo = new JLabel("Estadísticas y salón de la fama", SwingConstants.CENTER);
+        lblSubtitulo.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        lblSubtitulo.setForeground(new Color(180, 180, 180));
+        panelNorte.add(lblSubtitulo, BorderLayout.SOUTH);
+        
+        contentPane.add(panelNorte, BorderLayout.NORTH);
 
         // ==========================================
-        // 2. ZONA CENTRO: Tabla de Estadísticas
+        // 2. ZONA CENTRO: Tarjeta redondeada con Tabla
         // ==========================================
-        String[] columnas = {"Pos.", "Jugador", "Partidas", "Victorias", "% Victoria", "Pos. Prom.", "Racha (Últimas) 🔥"};
+        JPanel panelTablaContainer = new JPanel(new BorderLayout()) {
+            private static final long serialVersionUID = 1L;
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                GradientPaint gradiente = new GradientPaint(
+                    0, 0, new Color(50, 50, 55),
+                    0, getHeight(), new Color(40, 40, 45)
+                );
+                g2.setPaint(gradiente);
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20);
+                
+                g2.setColor(new Color(70, 70, 75));
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 20, 20);
+                
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        panelTablaContainer.setOpaque(false);
+        panelTablaContainer.setBorder(new EmptyBorder(20, 20, 20, 20));
+        
+        String[] columnas = {"Pos.", "Jugador", "Partidas", "Victorias", "% Victoria", "Pos. Prom.", "Racha"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -76,42 +146,50 @@ public class Ranking extends JFrame {
         
         tablaRanking = new JTable(modeloTabla);
         tablaRanking.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        tablaRanking.setRowHeight(45); // 🟢 MEJORA: Filas un poco más altas para que respiren
+        tablaRanking.setRowHeight(45);
+        tablaRanking.setBackground(new Color(45, 45, 48));
+        tablaRanking.setForeground(Color.WHITE);
+        tablaRanking.setGridColor(new Color(60, 60, 65));
+        tablaRanking.setSelectionBackground(COLOR_SANGRE_CLARO);
+        tablaRanking.setSelectionForeground(Color.WHITE);
         
         // Estilo de la cabecera
         tablaRanking.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 15));
-        tablaRanking.getTableHeader().setBackground(new Color(50, 50, 55));
-        tablaRanking.getTableHeader().setForeground(Color.WHITE);
-        tablaRanking.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 40));
+        tablaRanking.getTableHeader().setBackground(new Color(40, 40, 45));
+        tablaRanking.getTableHeader().setForeground(new Color(200, 200, 200));
+        tablaRanking.getTableHeader().setPreferredSize(new Dimension(0, 40));
+        tablaRanking.getTableHeader().setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(70, 70, 75)));
         
-        // 🟢 MEJORA: Ajuste manual de anchos de columna para una distribución perfecta
+        // Ajuste manual de anchos de columna
         TableColumn colPos = tablaRanking.getColumnModel().getColumn(0);
         colPos.setPreferredWidth(60);
         colPos.setMaxWidth(60);
         
         TableColumn colJugador = tablaRanking.getColumnModel().getColumn(1);
-        colJugador.setPreferredWidth(250); // Más espacio para nombres largos
+        colJugador.setPreferredWidth(250);
         
-        // 🟢  TableColumn no tiene setToolTipText.
-        // Lo solucionamos con un nombre de columna autoexplicativo.
         TableColumn colRacha = tablaRanking.getColumnModel().getColumn(6);
-        colRacha.setPreferredWidth(140); // Un poco más de ancho para que quepa el texto nuevo
-        colRacha.setMaxWidth(160);
+        colRacha.setPreferredWidth(100);
+        colRacha.setMaxWidth(120);
 
-        // Centrar el texto de las columnas numéricas (de la 2 a la 6)
+        // Centrar el texto de las columnas numéricas
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        centerRenderer.setBackground(new Color(45, 45, 48));
+        centerRenderer.setForeground(Color.WHITE);
         for (int i = 2; i < columnas.length; i++) {
             tablaRanking.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
         }
         
-        // Alinear el nombre del jugador a la izquierda con un pequeño margen
+        // Alinear el nombre del jugador a la izquierda con margen
         DefaultTableCellRenderer leftRenderer = new DefaultTableCellRenderer();
         leftRenderer.setHorizontalAlignment(JLabel.LEFT);
-        leftRenderer.setBorder(new EmptyBorder(0, 10, 0, 0)); // Margen izquierdo de 10px
+        leftRenderer.setBorder(new EmptyBorder(0, 15, 0, 0));
+        leftRenderer.setBackground(new Color(45, 45, 48));
+        leftRenderer.setForeground(Color.WHITE);
         tablaRanking.getColumnModel().getColumn(1).setCellRenderer(leftRenderer);
 
-        // RENDERIZADOR PERSONALIZADO para colorear el Top 3
+        // 🟢 RENDERIZADOR PERSONALIZADO para el Top 3 en tonos ROJOS
         tablaRanking.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
@@ -121,28 +199,28 @@ public class Ranking extends JFrame {
                 
                 if (!isSelected) {
                     if (row == 0) {
-                        c.setBackground(new Color(255, 215, 0, 30)); // 🥇 ORO (más sutil)
+                        c.setBackground(new Color(90, 25, 25)); // 🥇 1º Rojo brillante
                         if (column == 0) {
                             setText("🥇");
-                            setFont(new Font("Segoe UI Emoji", Font.PLAIN, 28));
+                            setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
                             setHorizontalAlignment(JLabel.CENTER);
                         }
                     } else if (row == 1) {
-                        c.setBackground(new Color(192, 192, 192, 30)); // 🥈 PLATA
+                        c.setBackground(new Color(75, 20, 20)); // 🥈 2º Rojo medio
                         if (column == 0) {
                             setText("🥈");
-                            setFont(new Font("Segoe UI Emoji", Font.PLAIN, 28));
+                            setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
                             setHorizontalAlignment(JLabel.CENTER);
                         }
                     } else if (row == 2) {
-                        c.setBackground(new Color(205, 127, 50, 30)); // 🥉 BRONCE
+                        c.setBackground(new Color(60, 15, 15)); // 🥉 3º Rojo oscuro
                         if (column == 0) {
                             setText("🥉");
-                            setFont(new Font("Segoe UI Emoji", Font.PLAIN, 28));
+                            setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
                             setHorizontalAlignment(JLabel.CENTER);
                         }
                     } else {
-                        c.setBackground(new Color(45, 45, 48)); // Fondo normal oscuro
+                        c.setBackground(new Color(45, 45, 48)); // Fondo normal
                         if (column == 0) {
                             setText(String.valueOf(row + 1));
                             setFont(new Font("Segoe UI", Font.BOLD, 16));
@@ -155,29 +233,33 @@ public class Ranking extends JFrame {
         });
         
         JScrollPane scrollPane = new JScrollPane(tablaRanking);
-        scrollPane.setBorder(null); // Quitamos el borde por defecto del scroll para que sea más limpio
-        contentPane.add(scrollPane, BorderLayout.CENTER);
+        scrollPane.setBorder(null);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        panelTablaContainer.add(scrollPane, BorderLayout.CENTER);
+        
+        contentPane.add(panelTablaContainer, BorderLayout.CENTER);
 
         cargarRanking();
 
         // ==========================================
-        // 3. ZONA SUR: Botón Volver
+        // 3. ZONA SUR: Botón Volver unificado
         // ==========================================
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER));
         panelBotones.setOpaque(false);
-        contentPane.add(panelBotones, BorderLayout.SOUTH);
-
-        JButton btnVolver = new JButton("Volver al Menú");
-        btnVolver.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        btnVolver.setBackground(new Color(70, 70, 75));
+        
+        JButton btnVolver = new JButton("← Volver");
+        btnVolver.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        btnVolver.setPreferredSize(new Dimension(140, 45));
+        btnVolver.setBackground(new Color(50, 50, 55));
         btnVolver.setForeground(Color.WHITE);
         btnVolver.setFocusPainted(false);
         btnVolver.setBorderPainted(false);
         btnVolver.setOpaque(true);
         btnVolver.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        // Un poco más de tamaño al botón
-        btnVolver.setPreferredSize(new java.awt.Dimension(200, 40)); 
         panelBotones.add(btnVolver);
+        
+        contentPane.add(panelBotones, BorderLayout.SOUTH);
 
         btnVolver.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
