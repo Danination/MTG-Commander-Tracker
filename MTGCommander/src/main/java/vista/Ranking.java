@@ -42,7 +42,7 @@ public class Ranking extends JFrame {
     private DefaultTableModel modeloTabla;
 
     // Colores rojo sangre
-    private static final Color COLOR_SANGRE = new Color(139, 26, 26);
+    private static final Color COLOR_SANGRE = new Color(220, 60, 60);
     private static final Color COLOR_SANGRE_CLARO = new Color(165, 42, 42);
     private static final Color COLOR_SANGRE_OSCURO = new Color(74, 14, 14);
 
