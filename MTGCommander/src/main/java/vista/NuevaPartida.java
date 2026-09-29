@@ -1,19 +1,27 @@
 package vista;
 
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
@@ -21,6 +29,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 
@@ -45,6 +54,14 @@ public class NuevaPartida extends JFrame {
 	private int turnoActual = 1;
 	
 	private List<Jugador> jugadoresEnPartida;
+
+	// Paleta de colores para los botones inferiores (igual que en el resto de la app)
+	private static final Color COLOR_ROJO_BRILLANTE = new Color(220, 60, 60);
+	private static final Color COLOR_ROJO_HOVER = new Color(235, 80, 80);
+	private static final Color COLOR_GRIS_OSCURO = new Color(50, 50, 55);
+	private static final Color COLOR_GRIS_OSCURO_HOVER = new Color(65, 65, 70);
+	private static final Color COLOR_AVISO = new Color(160, 110, 40);
+	private static final Color COLOR_AVISO_HOVER = new Color(180, 130, 55);
 
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
@@ -90,7 +107,9 @@ public class NuevaPartida extends JFrame {
 		JDialog dialogMensaje = new JDialog(this, "¡Nueva Partida!", true);
 		dialogMensaje.setLayout(new FlowLayout(FlowLayout.CENTER));
 		JLabel lblMensaje = new JLabel(fraseAleatoria, SwingConstants.CENTER);
-		lblMensaje.setFont(new Font("Segoe UI", Font.BOLD, 16));
+		// 🟢 "Segoe UI Emoji" para que los emojis de la frase se vean bien
+		// en vez de cuadros vacíos.
+		lblMensaje.setFont(new Font("Segoe UI Emoji", Font.BOLD, 16));
 		dialogMensaje.add(lblMensaje);
 		dialogMensaje.setSize(400, 120);
 		dialogMensaje.setLocationRelativeTo(this);
@@ -105,29 +124,48 @@ public class NuevaPartida extends JFrame {
 		dialogMensaje.setVisible(true);
 
 		// ==========================================
-		// 1. ZONA NORTE: HUD de Control (Rediseño Moderno)
+		// 1. ZONA NORTE: HUD de Control (Rediseño Premium)
 		// ==========================================
 		JPanel panelSuperior = new JPanel();
-		panelSuperior.setLayout(new FlowLayout(FlowLayout.CENTER, 40, 12));
+		panelSuperior.setLayout(new FlowLayout(FlowLayout.CENTER, 30, 15));
 		panelSuperior.setOpaque(true);
-		panelSuperior.setBackground(new Color(45, 45, 48)); // Fondo oscuro integrado
+		panelSuperior.setBackground(new Color(40, 40, 45)); // Fondo más oscuro e integrado
+		panelSuperior.setBorder(BorderFactory.createCompoundBorder(
+			BorderFactory.createMatteBorder(0, 0, 2, 0, new Color(70, 70, 75)),
+			BorderFactory.createEmptyBorder(10, 20, 10, 20)
+		));
 
 		// --- CRONÓMETRO ---
-		JPanel boxCrono = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+		JPanel boxCrono = new JPanel() {
+			@Override
+			protected void paintComponent(Graphics g) {
+				Graphics2D g2 = (Graphics2D) g.create();
+				g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				g2.setColor(new Color(50, 50, 55));
+				g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
+				g2.setColor(new Color(100, 255, 100, 30));
+				g2.setStroke(new BasicStroke(1.5f));
+				g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 12, 12);
+				g2.dispose();
+				super.paintComponent(g);
+			}
+		};
+		boxCrono.setLayout(new FlowLayout(FlowLayout.CENTER, 12, 0));
+		boxCrono.setPreferredSize(new Dimension(180, 55));
 		boxCrono.setOpaque(false);
 		
-		JLabel lblIconoCrono = new JLabel("⏱");
-		lblIconoCrono.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 22));
-		lblIconoCrono.setForeground(new Color(180, 180, 180));
+		JLabel lblIconoCrono = new JLabel("");
+		lblIconoCrono.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 24));
+		lblIconoCrono.setForeground(new Color(100, 255, 100));
 		boxCrono.add(lblIconoCrono);
 		
 		lblCronometro = new JLabel("00:00");
-		lblCronometro.setFont(new Font("Segoe UI", Font.BOLD, 32));
+		lblCronometro.setFont(new Font("Segoe UI", Font.BOLD, 28));
 		lblCronometro.setForeground(new Color(100, 255, 100));
 		boxCrono.add(lblCronometro);
 		
-		JButton btnPausar = new JButton("⏸");
-		btnPausar.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 18));
+		JButton btnPausar = new JButton("");
+		btnPausar.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 16));
 		btnPausar.setForeground(Color.WHITE);
 		btnPausar.setBackground(new Color(60, 60, 65));
 		btnPausar.setFocusPainted(false);
@@ -135,32 +173,42 @@ public class NuevaPartida extends JFrame {
 		btnPausar.setOpaque(true);
 		btnPausar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 		btnPausar.setToolTipText("Pausar/Reanudar cronómetro");
+		btnPausar.setPreferredSize(new Dimension(40, 40));
 		boxCrono.add(btnPausar);
 		
 		panelSuperior.add(boxCrono);
 
-		// Separador vertical elegante
-		JLabel separador1 = new JLabel("│");
-		separador1.setFont(new Font("Segoe UI", Font.PLAIN, 24));
-		separador1.setForeground(new Color(80, 80, 85));
-		panelSuperior.add(separador1);
-
 		// --- TURNOS ---
-		JPanel boxTurno = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+		JPanel boxTurno = new JPanel() {
+			@Override
+			protected void paintComponent(Graphics g) {
+				Graphics2D g2 = (Graphics2D) g.create();
+				g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				g2.setColor(new Color(50, 50, 55));
+				g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
+				g2.setColor(new Color(100, 200, 255, 30));
+				g2.setStroke(new BasicStroke(1.5f));
+				g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 12, 12);
+				g2.dispose();
+				super.paintComponent(g);
+			}
+		};
+		boxTurno.setLayout(new FlowLayout(FlowLayout.CENTER, 12, 0));
+		boxTurno.setPreferredSize(new Dimension(140, 55));
 		boxTurno.setOpaque(false);
 		
-		JLabel lblIconoTurno = new JLabel("⟳");
-		lblIconoTurno.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 22));
-		lblIconoTurno.setForeground(new Color(180, 180, 180));
+		JLabel lblIconoTurno = new JLabel("↻");
+		lblIconoTurno.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 24));
+		lblIconoTurno.setForeground(new Color(100, 200, 255));
 		boxTurno.add(lblIconoTurno);
 		
 		lblTurno = new JLabel("1");
-		lblTurno.setFont(new Font("Segoe UI", Font.BOLD, 32));
+		lblTurno.setFont(new Font("Segoe UI", Font.BOLD, 28));
 		lblTurno.setForeground(new Color(100, 200, 255));
 		boxTurno.add(lblTurno);
 		
 		JButton btnSiguienteTurno = new JButton("▶");
-		btnSiguienteTurno.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 18));
+		btnSiguienteTurno.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 16));
 		btnSiguienteTurno.setForeground(Color.WHITE);
 		btnSiguienteTurno.setBackground(new Color(60, 60, 65));
 		btnSiguienteTurno.setFocusPainted(false);
@@ -168,35 +216,42 @@ public class NuevaPartida extends JFrame {
 		btnSiguienteTurno.setOpaque(true);
 		btnSiguienteTurno.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 		btnSiguienteTurno.setToolTipText("Siguiente turno");
+		btnSiguienteTurno.setPreferredSize(new Dimension(40, 40));
 		boxTurno.add(btnSiguienteTurno);
 		
 		panelSuperior.add(boxTurno);
 
-		// Separador vertical elegante
-		JLabel separador2 = new JLabel("│");
-		separador2.setFont(new Font("Segoe UI", Font.PLAIN, 24));
-		separador2.setForeground(new Color(80, 80, 85));
-		panelSuperior.add(separador2);
-
-		// --- DADOS ---
-		JButton btnDados = new JButton(" Tirar Dado");
-		btnDados.setFont(new Font("Segoe UI", Font.BOLD, 16));
-		btnDados.setForeground(Color.WHITE);
-		btnDados.setBackground(new Color(70, 70, 75));
-		btnDados.setFocusPainted(false);
-		btnDados.setBorderPainted(false);
-		btnDados.setOpaque(true);
-		btnDados.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-		btnDados.setToolTipText("Tirar dados virtuales");
-		panelSuperior.add(btnDados);
+		// --- DADO (único, usando PopupDado) ---
+		JButton btnTirarDado = new JButton("🎲 Tirar Dado");
+		btnTirarDado.setFont(new Font("Segoe UI", Font.BOLD, 15));
+		btnTirarDado.setForeground(Color.WHITE);
+		btnTirarDado.setBackground(COLOR_ROJO_BRILLANTE);
+		btnTirarDado.setFocusPainted(false);
+		btnTirarDado.setBorderPainted(false);
+		btnTirarDado.setOpaque(true);
+		btnTirarDado.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+		btnTirarDado.setToolTipText("Tirar dado con animación");
+		btnTirarDado.setPreferredSize(new Dimension(160, 50));
+		btnTirarDado.addActionListener(e -> {
+			PopupDado popupDado = new PopupDado((java.awt.Frame) SwingUtilities.getWindowAncestor(this));
+			popupDado.setVisible(true);
+		});
+		panelSuperior.add(btnTirarDado);
 
 		contentPane.add(panelSuperior, BorderLayout.NORTH);
 
 		// ==========================================
 		// 2. ZONA CENTRAL: La Mesa de Juego
 		// ==========================================
+		// 🟢 Columnas adaptables: ceil(√nºJugadores) reparte la rejilla
+		// lo más cuadrada posible según cuántos jugadores haya (2 → lado
+		// a lado, 4 → 2×2, 6 → 3×2, 9 → 3×3, etc.) en vez de forzar
+		// siempre 2 columnas.
+		int numJugadores = jugadoresSeleccionados.size();
+		int columnasMesa = Math.max(1, (int) Math.ceil(Math.sqrt(numJugadores)));
+
 		JPanel panelMesa = new JPanel();
-		panelMesa.setLayout(new GridLayout(0, 2, 10, 10)); // 2 columnas, filas automáticas
+		panelMesa.setLayout(new GridLayout(0, columnasMesa, 10, 10)); // filas automáticas
 		contentPane.add(panelMesa, BorderLayout.CENTER);
 
 		// 🟢 CORRECCIÓN: Usamos la lista global de la clase, no creamos una nueva local
@@ -215,17 +270,33 @@ public class NuevaPartida extends JFrame {
 		// ==========================================
 		JPanel panelInferior = new JPanel();
 		panelInferior.setLayout(new GridLayout(1, 3, 10, 10));
+		// 🟢 Fondo oscuro a juego con el resto de la app (antes quedaba
+		// con el gris claro por defecto de Swing).
+		panelInferior.setOpaque(true);
+		panelInferior.setBackground(new Color(45, 45, 48));
+		panelInferior.setBorder(new EmptyBorder(10, 0, 0, 0));
 		
-		JButton btnVolver = new JButton("Volver al Menú");
+		// 🟢 Botones redondeados, mismo componente que en PanelControlJugador
+		// y FormularioJugador, en vez de JButton planos.
+		JButton btnVolver = new BotonRedondeado("Volver al Menú", COLOR_GRIS_OSCURO, COLOR_GRIS_OSCURO_HOVER);
 		btnVolver.setFont(new Font("Segoe UI", Font.BOLD, 14));
+		btnVolver.setForeground(Color.WHITE);
+		btnVolver.setPreferredSize(new Dimension(0, 46));
+		btnVolver.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 		panelInferior.add(btnVolver);
 		
-		JButton btnReiniciar = new JButton("Reiniciar Partida");
+		JButton btnReiniciar = new BotonRedondeado("Reiniciar Partida", COLOR_AVISO, COLOR_AVISO_HOVER);
 		btnReiniciar.setFont(new Font("Segoe UI", Font.BOLD, 14));
+		btnReiniciar.setForeground(Color.WHITE);
+		btnReiniciar.setPreferredSize(new Dimension(0, 46));
+		btnReiniciar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 		panelInferior.add(btnReiniciar);
 		
-		JButton btnFinalizar = new JButton("Finalizar Partida");
+		JButton btnFinalizar = new BotonRedondeado("Finalizar Partida", COLOR_ROJO_BRILLANTE, COLOR_ROJO_HOVER);
 		btnFinalizar.setFont(new Font("Segoe UI", Font.BOLD, 14));
+		btnFinalizar.setForeground(Color.WHITE);
+		btnFinalizar.setPreferredSize(new Dimension(0, 46));
+		btnFinalizar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 		panelInferior.add(btnFinalizar);
 		
 		contentPane.add(panelInferior, BorderLayout.SOUTH);
@@ -233,7 +304,7 @@ public class NuevaPartida extends JFrame {
 		// ==========================================
 		// 4. LÓGICA DE LOS BOTONES
 		// ==========================================
-		
+				
 		// Lógica del Cronómetro
 		timer = new Timer(1000, new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -331,27 +402,6 @@ public class NuevaPartida extends JFrame {
 		       }
 		});
 
-		// Lógica del botón "Tirar Dados"
-		btnDados.addActionListener(new ActionListener() {
-		       public void actionPerformed(ActionEvent e) {
-		           String[] opciones = {"d6 (6 caras)", "d20 (20 caras)", "d100 (100 caras)"};
-		           String seleccion = (String) JOptionPane.showInputDialog(
-		               NuevaPartida.this, "¿Qué dado quieres tirar?", "Lanzador de Dados",
-		               JOptionPane.QUESTION_MESSAGE, null, opciones, opciones[0]
-		           );
-		           
-		           if (seleccion != null) {
-		               int resultado = 0;
-		               if (seleccion.contains("d6")) resultado = (int)(Math.random() * 6) + 1;
-		               else if (seleccion.contains("d20")) resultado = (int)(Math.random() * 20) + 1;
-		               else if (seleccion.contains("d100")) resultado = (int)(Math.random() * 100) + 1;
-		               
-		               JOptionPane.showMessageDialog(NuevaPartida.this, 
-		                   "¡Has tirado un " + seleccion + "!\n\nResultado: " + resultado, 
-		                   "Resultado del Dado", JOptionPane.INFORMATION_MESSAGE);
-		           }
-		       }
-		});
 		
 		// Botón Finalizar
 		btnFinalizar.addActionListener(new ActionListener() {
@@ -424,5 +474,50 @@ public class NuevaPartida extends JFrame {
 				}
 			}
 		});
+	}
+
+	/**
+	 * Botón con esquinas redondeadas, mismo componente que en
+	 * PanelControlJugador y FormularioJugador, para que los botones de
+	 * control global compartan el mismo lenguaje visual que el resto de
+	 * la app.
+	 */
+	private static class BotonRedondeado extends JButton {
+		private static final long serialVersionUID = 1L;
+		private final Color colorBase;
+		private final Color colorHover;
+		private boolean hover = false;
+
+		BotonRedondeado(String texto, Color colorBase, Color colorHover) {
+			super(texto);
+			this.colorBase = colorBase;
+			this.colorHover = colorHover;
+			setContentAreaFilled(false);
+			setFocusPainted(false);
+			setBorderPainted(false);
+			setOpaque(false);
+			addMouseListener(new MouseAdapter() {
+				@Override
+				public void mouseEntered(MouseEvent e) {
+					hover = true;
+					repaint();
+				}
+				@Override
+				public void mouseExited(MouseEvent e) {
+					hover = false;
+					repaint();
+				}
+			});
+		}
+
+		@Override
+		protected void paintComponent(Graphics g) {
+			Graphics2D g2 = (Graphics2D) g.create();
+			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			g2.setColor(hover ? colorHover : colorBase);
+			g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+			g2.dispose();
+			super.paintComponent(g);
+		}
 	}
 }

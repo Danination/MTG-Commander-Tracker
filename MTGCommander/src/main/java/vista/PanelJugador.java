@@ -1,7 +1,9 @@
 package vista;
 
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -41,6 +43,21 @@ public class PanelJugador extends JPanel {
     private boolean haConcedido = false;
     private Image imagenFondo;
     private Image imagenAvatar; // 🟢 NUEVO: Imagen del avatar
+
+    // 🟢 NUEVO: Contadores numéricos (sin límite ni derrota asociada)
+    private int tesoro;
+    private int impuestoComandante;
+    private int experiencia;
+    // 🟢 NUEVO: Contador numérico CON derrota asociada, igual que veneno
+    private int rad;
+
+    // 🟢 NUEVO: Estados on/off. iniciativa es exclusiva entre jugadores
+    // (igual que esMonarca); ascenso y ko son independientes por jugador;
+    // noche es un estado GLOBAL de partida, se sincroniza entre paneles.
+    private boolean iniciativa;
+    private boolean ascenso;
+    private boolean noche;
+    private boolean ko;
     
     private List<Jugador> todosLosJugadores;
     private List<PanelJugador> todosLosPaneles;
@@ -78,6 +95,15 @@ public class PanelJugador extends JPanel {
         this.veneno = 0;
         this.energia = 0;
         this.esMonarca = false;
+        // 🟢 NUEVO: valores iniciales de los contadores y estados nuevos
+        this.tesoro = 0;
+        this.rad = 0;
+        this.impuestoComandante = 0;
+        this.experiencia = 0;
+        this.iniciativa = false;
+        this.ascenso = false;
+        this.noche = false;
+        this.ko = false;
         this.todosLosJugadores = todosLosJugadores;
         this.todosLosPaneles = todosLosPaneles;
         this.ordenDeEliminacion = ordenDeEliminacion;
@@ -128,13 +154,12 @@ public class PanelJugador extends JPanel {
         
         lblFotoComandante = new JLabel();
         lblFotoComandante.setPreferredSize(new Dimension(80, 80));
-        lblFotoComandante.setBorder(javax.swing.BorderFactory.createLineBorder(Color.WHITE, 2));
-        lblFotoComandante.setOpaque(true);
-        lblFotoComandante.setBackground(Color.BLACK);
+        lblFotoComandante.setOpaque(false); // 🟢 Ya no es opaco
         
         // 🟢 Mostrar el avatar si existe, si no, mostrar la imagen del comandante
         if (imagenAvatar != null) {
-            ImageIcon iconAvatar = new ImageIcon(imagenAvatar.getScaledInstance(80, 80, Image.SCALE_SMOOTH));
+            // 🟢 Aplicar recorte redondeado (radio 15 para esquinas suaves)
+            ImageIcon iconAvatar = recortarImagenRedondeada(imagenAvatar, 80, 80, 15);
             lblFotoComandante.setIcon(iconAvatar);
             lblFotoComandante.setToolTipText("Avatar de " + jugador.getNombre());
             System.out.println("✅ Mostrando avatar para " + jugador.getNombre());
@@ -146,10 +171,13 @@ public class PanelJugador extends JPanel {
         } else {
             lblFotoComandante.setText("?");
             lblFotoComandante.setFont(new Font("Segoe UI", Font.BOLD, 40));
-            lblFotoComandante.setForeground(Color.WHITE);
+            lblFotoComandante.setForeground(new Color(100, 100, 100));
             lblFotoComandante.setHorizontalAlignment(SwingConstants.CENTER);
             lblFotoComandante.setToolTipText("Sin imagen");
         }
+        
+        // 🟢 Añadir borde personalizado redondeado (en lugar del blanco cuadrado)
+        lblFotoComandante.setBorder(new BordeRedondeado(new Color(220, 60, 60), 15));
         
         lblFotoComandante.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         lblFotoComandante.addMouseListener(new MouseAdapter() {
@@ -289,6 +317,29 @@ public class PanelJugador extends JPanel {
     public void restarVeneno() { if (!eliminado && veneno > 0) veneno--; }
     public void sumarEnergia() { if (!eliminado) energia++; }
     public void restarEnergia() { if (!eliminado && energia > 0) energia--; }
+
+    // 🟢 NUEVO: Tesoro — contador simple, sin límite ni derrota asociada
+    public void sumarTesoro() { if (!eliminado) tesoro++; }
+    public void restarTesoro() { if (!eliminado && tesoro > 0) tesoro--; }
+
+    // 🟢 NUEVO: Rad — mismo criterio de derrota que Veneno (10 o más)
+    public void sumarRad() {
+        if (eliminado) return;
+        rad++;
+        if (rad >= 10) {
+            JOptionPane.showMessageDialog(this, "¡" + jugador.getNombre() + " ha acumulado 10 contadores de radiación!\n\n¡HA PERDIDO LA PARTIDA!", "¡DERROTA POR RADIACIÓN!", JOptionPane.WARNING_MESSAGE);
+            eliminarJugador();
+        }
+    }
+    public void restarRad() { if (!eliminado && rad > 0) rad--; }
+
+    // 🟢 NUEVO: Impuesto de Comandante — contador simple
+    public void sumarImpuestoComandante() { if (!eliminado) impuestoComandante++; }
+    public void restarImpuestoComandante() { if (!eliminado && impuestoComandante > 0) impuestoComandante--; }
+
+    // 🟢 NUEVO: Experiencia — contador simple
+    public void sumarExperiencia() { if (!eliminado) experiencia++; }
+    public void restarExperiencia() { if (!eliminado && experiencia > 0) experiencia--; }
     
     public void toggleMonarca() {
         if (eliminado) return;
@@ -310,12 +361,66 @@ public class PanelJugador extends JPanel {
         this.lblIndicadorMonarca.setText("");
         repaint();
     }
+
+    // 🟢 NUEVO: Iniciativa — exclusiva entre jugadores, igual patrón que Monarca
+    public void toggleIniciativa() {
+        if (eliminado) return;
+        if (!this.iniciativa) {
+            for (PanelJugador otroPanel : todosLosPaneles) {
+                if (otroPanel != this) otroPanel.desactivarIniciativa();
+            }
+            this.iniciativa = true;
+        } else {
+            this.iniciativa = false;
+        }
+    }
+
+    public void desactivarIniciativa() {
+        this.iniciativa = false;
+    }
+
+    // 🟢 NUEVO: Ascenso (Bendición de la Ciudad) — independiente por jugador
+    public void toggleAscenso() {
+        if (eliminado) return;
+        this.ascenso = !this.ascenso;
+    }
+
+    // 🟢 NUEVO: Día/Noche — estado GLOBAL de la partida. Al tocarlo desde
+    // cualquier panel, se sincroniza el mismo valor en todos los jugadores.
+    public void toggleDiaNoche() {
+        boolean nuevoEstado = !this.noche;
+        for (PanelJugador panel : todosLosPaneles) {
+            panel.setNoche(nuevoEstado);
+        }
+    }
+
+    private void setNoche(boolean valor) {
+        this.noche = valor;
+    }
+
+    // 🟢 NUEVO: K.O. — marcador manual independiente del sistema de
+    // "eliminado" (que ya gestiona derrota por vida/comandante/veneno y
+    // el flujo de conceder/revivir). Este es solo un indicador visual
+    // rápido, no dispara ninguno de esos diálogos.
+    public void toggleKO() {
+        this.ko = !this.ko;
+    }
     
     public int getVidas() { return vidas; }
     public int getDanioComandante() { return getTotalDanioComandante(); }
     public int getVeneno() { return veneno; }
     public int getEnergia() { return energia; }
     public boolean esMonarca() { return esMonarca; }
+
+    // 🟢 NUEVO: getters de los contadores y estados nuevos
+    public int getTesoro() { return tesoro; }
+    public int getRad() { return rad; }
+    public int getImpuestoComandante() { return impuestoComandante; }
+    public int getExperiencia() { return experiencia; }
+    public boolean tieneIniciativa() { return iniciativa; }
+    public boolean tieneAscenso() { return ascenso; }
+    public boolean esNoche() { return noche; }
+    public boolean estaKO() { return ko; }
 
     // ==========================================
     // MÉTODOS VISUALES Y LÓGICA DE JUEGO
@@ -449,6 +554,15 @@ public class PanelJugador extends JPanel {
         this.eliminado = false;
         this.haConcedido = false;
         this.dañoPorComandante.clear();
+        // 🟢 NUEVO: reiniciar también los contadores y estados nuevos
+        this.tesoro = 0;
+        this.rad = 0;
+        this.impuestoComandante = 0;
+        this.experiencia = 0;
+        this.iniciativa = false;
+        this.ascenso = false;
+        this.noche = false;
+        this.ko = false;
         
         lblVidas.setText(String.valueOf(vidas));
         lblVidas.setForeground(Color.WHITE);
@@ -464,4 +578,58 @@ public class PanelJugador extends JPanel {
     }
 
     public Jugador getJugador() { return jugador; }
+    
+    // ==========================================
+    // 🟢 MÉTODOS AUXILIARES PARA BORDES REDONDEADOS
+    // ==========================================
+    
+    private ImageIcon recortarImagenRedondeada(Image imagenOriginal, int ancho, int alto, int radio) {
+        java.awt.image.BufferedImage imagenRecortada = new java.awt.image.BufferedImage(ancho, alto, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = imagenRecortada.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        
+        int imgAncho = imagenOriginal.getWidth(null);
+        int imgAlto = imagenOriginal.getHeight(null);
+        double ratio = Math.min((double) ancho / imgAncho, (double) alto / imgAlto);
+        int nuevoAncho = (int) (imgAncho * ratio);
+        int nuevoAlto = (int) (imgAlto * ratio);
+        
+        int x = (ancho - nuevoAncho) / 2;
+        int y = (alto - nuevoAlto) / 2;
+        
+        java.awt.geom.RoundRectangle2D formaRedondeada = new java.awt.geom.RoundRectangle2D.Double(0, 0, ancho, alto, radio, radio);
+        g2.setClip(formaRedondeada);
+        g2.drawImage(imagenOriginal, x, y, nuevoAncho, nuevoAlto, null);
+        g2.dispose();
+        
+        return new ImageIcon(imagenRecortada);
+    }
+    
+    // Clase interna para borde redondeado
+    private static class BordeRedondeado extends javax.swing.border.AbstractBorder {
+        private static final long serialVersionUID = 1L;
+        private Color color;
+        private final int radio;
+        
+        BordeRedondeado(Color color, int radio) {
+            this.color = color;
+            this.radio = radio;
+        }
+        
+        @Override
+        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(color);
+            g2.setStroke(new BasicStroke(2f));
+            g2.drawRoundRect(x, y, width - 1, height - 1, radio, radio);
+            g2.dispose();
+        }
+        
+        @Override
+        public java.awt.Insets getBorderInsets(Component c) {
+            return new java.awt.Insets(2, 2, 2, 2);
+        }
+    }
 }
