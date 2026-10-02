@@ -11,6 +11,8 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -147,6 +149,18 @@ public class PanelJugador extends JPanel {
         lblVidas.setForeground(Color.WHITE);
         lblVidas.setOpaque(false);
         add(lblVidas, BorderLayout.CENTER);
+
+        // 🟢 NUEVO: el tamaño de letra de la vida ya no es fijo. Con
+        // pocos jugadores en la mesa el panel es grande y 160pt cabe de
+        // sobra, pero con más jugadores la rejilla reparte el espacio en
+        // paneles más bajos y ese tamaño fijo se recortaba. Recalculamos
+        // la fuente cada vez que el panel cambia de tamaño.
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                ajustarTamanoFuenteVida();
+            }
+        });
 
         // Panel inferior: Foto + Nombre + Indicador Monarca
         JPanel panelInferior = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
@@ -305,6 +319,22 @@ public class PanelJugador extends JPanel {
     }
     
     public Map<Jugador, Integer> getDesgloseDanioComandante() { return dañoPorComandante; }
+
+    // 🟢 NUEVO: permite corregir un clic de más en daño de comandante.
+    // Sin esto, si te pasas de 21 por error, el contador de ESE rival se
+    // queda por encima de 21 para siempre y te vuelve a eliminar la
+    // próxima vez que te haga solo 1 punto más, aunque hayas "revivido"
+    // subiendo la vida a mano. Al restar, también se te devuelve
+    // exactamente esa vida (nunca más de la que realmente tenías
+    // registrada de ese rival).
+    public void restarDanioComandante(int cantidad, Jugador quienHizoElDanio) {
+        int dañoActual = dañoPorComandante.getOrDefault(quienHizoElDanio, 0);
+        if (dañoActual <= 0) return;
+        int nuevoDanio = Math.max(0, dañoActual - cantidad);
+        int diferenciaReal = dañoActual - nuevoDanio;
+        dañoPorComandante.put(quienHizoElDanio, nuevoDanio);
+        cambiarVidas(diferenciaReal);
+    }
     
     public void sumarVeneno() { 
         if (eliminado) return;
@@ -462,6 +492,16 @@ public class PanelJugador extends JPanel {
             g2d.setStroke(new java.awt.BasicStroke(4));
             g2d.drawRect(2, 2, getWidth() - 4, getHeight() - 4);
         }
+    }
+
+    // 🟢 NUEVO: tamaño de fuente de la vida proporcional a la altura real
+    // del panel (con un mínimo y un máximo razonables), en vez de un
+    // valor fijo que se recorta cuando hay muchos jugadores en la mesa.
+    private void ajustarTamanoFuenteVida() {
+        int alto = getHeight();
+        if (alto <= 0) return;
+        int tamano = Math.max(50, Math.min(160, alto / 3));
+        lblVidas.setFont(new Font("Segoe UI", Font.BOLD, tamano));
     }
 
     private void cambiarVidas(int cantidad) {

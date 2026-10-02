@@ -39,7 +39,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 import com.formdev.flatlaf.FlatDarkLaf;
-
 import modelo.Jugador;
 
 public class PanelControlJugador extends JDialog {
@@ -267,10 +266,21 @@ public class PanelControlJugador extends JDialog {
                 btn.setPreferredSize(new Dimension(0, 40));
                 btn.setForeground(Color.WHITE);
                 btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                btn.setToolTipText("Hacer 1 de daño de comandante");
-                btn.addActionListener(e -> {
-                    panelJugador.sumarDanioComandante(1, otroJugador);
-                    actualizarValores();
+                // 🟢 Clic izquierdo: +1. Clic derecho: −1, para poder
+                // corregir un clic de más sin quedar atrapado (sin esto,
+                // pasarse de 21 dejaba el contador de ese rival
+                // permanentemente por encima del umbral de derrota).
+                btn.setToolTipText("Clic: +1 daño   ·   Clic derecho: −1 (corregir)");
+                btn.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        if (SwingUtilities.isLeftMouseButton(e)) {
+                            panelJugador.sumarDanioComandante(1, otroJugador);
+                        } else if (SwingUtilities.isRightMouseButton(e)) {
+                            panelJugador.restarDanioComandante(1, otroJugador);
+                        }
+                        actualizarValores();
+                    }
                 });
                 gridBotonesCmdte.add(btn);
             }
